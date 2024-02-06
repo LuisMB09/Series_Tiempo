@@ -1,0 +1,144 @@
+---
+title: "Clase 1"
+format: html
+editor: visual
+---
+
+```{r}
+#| warning: false
+library(tidyverse) # data science
+library(fpp3) # ts
+library(plotly) # interactive plots
+library(patchwork) # handling many plots in one figure
+library(tidyquant) # financial analisys and downloading data
+```
+
+```{r}
+?aus_accommodation
+
+aus_accommodation
+```
+
+592 filas, 5 columnas, Key:State(8) son 8 estados, osea, 8 series de tiempo
+
+```{r}
+aus_accommodation |> 
+  distinct(State)
+tasmania <- aus_accommodation |>
+  filter(State == "Tasmania") |> 
+  # select(Date, Takings, Occupancy)  option 1
+  # select(Date, Takings:Occupnacy)
+  select(-c(State, CPI)) |> 
+  mutate(
+    'Año unión N°1'=1
+  ) |> 
+  janitor::clean_names()
+tasmania
+```
+
+```{r}
+tasmania |> 
+  autoplot(takings, color='#2E79E8', size=2)
+```
+
+we see that the Takings have an upward trend, yearly seasonality, and an increasing variance. We can try using a log transformation
+
+```{r}
+p <- tasmania |> 
+  autoplot(log(takings), color='#2E79E8', size=1)+
+  geom_point()
+ggplotly(p, dynamicTicks = TRUE) |> 
+  rangeslider()
+```
+
+```{r}
+tasmania |> 
+  gg_season(log(takings)) # para ver la seasonality
+```
+
+```{r}
+tasmania |> 
+  gg_subseries(log(takings))
+```
+
+```{r}
+tasmania |> 
+  gg_tsdisplay(log(takings), plot_type="auto")
+```
+
+```{r}
+stocks <- c('AAPL','GOOGL','TSLA','MSFT')
+
+stocks_data <- tq_get(
+  x = stocks,
+  get = "stock.prices",
+  from = "2010-01-01",
+  to = "2024-01-25"
+  )
+
+
+stocks_data <- stocks_data |> 
+  as_tsibble(index = date, key = symbol)
+
+stocks_data
+```
+
+```{r}
+stocks_data |> 
+  ggplot(aes(x = date, y = close, color = symbol))+
+  geom_line()
+```
+
+```{r}
+#| warning: false
+stocks_data |> 
+  ggplot(aes(x = date, open = open, high = high, low = low, close = close))+
+  geom_candlestick()+
+  facet_wrap(~ symbol, ncol = 2)
+```
+
+```{r}
+#| warning: false
+stocks2 <- 'AAPL'
+
+stocks_data2 <- tq_get(
+  x = stocks2,
+  get = "stock.prices",
+  from = "2010-01-01",
+  to = "2024-01-30"
+  )
+
+
+stocks_data2 <- stocks_data2 |> 
+  as_tsibble(index = date, key = symbol)
+
+stocks_data2 |> 
+  ggplot(aes(x = date, open = open, high = high, low = low, close = close))+
+  geom_candlestick()+
+  facet_wrap(~ symbol, ncol = 2)
+```
+
+# Cedasticidad
+
+-   Homocedasticidad para varianza constante.
+-   Heterocedasticidad para varianza variable.
+
+# Componentes
+
+-   Estacionalidad: Es una periodicidad fija.
+-   Ciclos: No se sabe con exactitud cuando va a ser la siguiente.
+
+# Tendencia
+
+Se calcula a través de medias móviles.
+
+```{r}
+us_retail_employment <- us_employment |> 
+  filter(year(Month)>=1990, Title=="Retail Trade") |> 
+  select(-Series_ID)
+
+# Para crear una carpeta
+dir.create("datos")
+us_retail_employment |> 
+  write_csv("datos/empleo_eeuu.csv")
+```
