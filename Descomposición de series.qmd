@@ -1,0 +1,54 @@
+---
+title: "Componentes"
+format: docx
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+library(fpp3)
+```
+
+
+```{r}
+empleo_tsbl <- us_employment |> 
+  filter(year(Month)>=1990, Title=="Retail Trade") |> 
+  select(-Series_ID)
+
+#Download to csv
+# Para crear una carpeta
+#dir.create("datos")
+#us_retail_employment |> 
+#  write_csv("datos/empleo_eeuu.csv")
+```
+
+```{r}
+autoplot(empleo_tsbl)
+```
+
+
+## Classical decomposition
+```{r}
+empleo_decomp <- empleo_tsbl |> 
+  model(
+    clasica=classical_decomposition(Employed,
+                                    type="additive")
+  )
+
+empleo_decomp
+```
+
+### Components
+
+```{r}
+empleo_components <- empleo_decomp |> 
+  components()
+empleo_components
+
+empleo_components |> 
+  autoplot()
+```
+
+
+
+
