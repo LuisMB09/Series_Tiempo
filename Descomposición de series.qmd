@@ -52,9 +52,12 @@ empleo_components |>
 Con descomposicón simple la tendencia a veces suaviza más d elo que debería. Como la estacionalidad es un promedio por lo que se mantiene fija, lo cual puede causar problemas.
 
 ```{r}
-empleo_tsbl |> 
-  model(STL(Employed ~ trend(window=7) + season(window='periodic'),
-    robust = TRUE)) |> 
+empleo_stl <- empleo_tsbl |>
+  model(
+    stl = STL(Employed),
+    stl2 = STL(Employed~trend(window = 7) + season(window = "periodic"))
+  )
+empleo_stl |> 
   components() |> 
   autoplot()
 ```
