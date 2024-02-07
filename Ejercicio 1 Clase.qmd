@@ -1,8 +1,14 @@
 ---
 title: "Ejercicio 1 Clase"
 author: "Equipo"
-format: html
-editor: visual
+format:
+  html:
+    embed-resources: true
+    theme:
+      light: minty
+      dark: darkly
+toc: true
+df-print: paged
 ---
 
 ```{r}
@@ -12,6 +18,8 @@ library(fpp3) # ts
 library(plotly) # interactive plots
 library(patchwork) # handling many plots in one figure
 library(tidyquant)
+library(tsibble)
+library(tibble)
 ```
 
 # Ejercicio 1
@@ -49,11 +57,11 @@ global |>
 ```
 
 
-### ¿Cómo ha sido la evolución de la economía de los países en el tiempo?*
+### ¿Cómo ha sido la evolución de la economía de los países en el tiempo?
 
 La gran mayoría de países muestra un crecimiento de su PIB per cápita a lo largo del tiempo. Se puede ver una tendencia similar entre todos los países en cuanto a los años en los que sube el PIB per cápita y años en los que baja de manera general como en 2008 por la crisis inmobiliaria de Estados Unidos. Que los movimientos en el PIB per cápita sean similares entre tantos paíes se debe principalmente a lo globalizada que esta la economía actualmente.
 
-### ¿Cuál país tiene el mayor PIB per cápita?*
+### ¿Cuál país tiene el mayor PIB per cápita?
 
 Monaco es el país con un mayor PIB per cápita de $168,010 por persona.
 
@@ -101,15 +109,13 @@ vic_elec |>
 
 * EUA: 
 * México:
-*Victoria:
+* Victoria:
 
 # Ejercicio 3
 
-¿Es útil realizar una transformación de Box-Cox a los datos canadian_gas? ¿Por qué sí o por qué no?
-
 ```{r}
 cg <- canadian_gas |> 
-  autoplot(Volume) + ggtitle("Volumen de Gas")
+  autoplot(Volume) + ggtitle("Volumen de Gas") + xlab("Date")
 ggplotly(cg, dynamicTicks = TRUE)
 ```
 
@@ -120,30 +126,82 @@ ggplotly(cg, dynamicTicks = TRUE)
 ```
 
 ```{r}
-canadian_gas |> 
-  autoplot(box_cox(Volume, lambda)) + ggtitle("Box-Cox, lambda = 0.5767648")
+l <- canadian_gas |>  
+  autoplot(box_cox(Volume, lambda)) + ggtitle("Box-Cox, lambda = 0.5767648") + ylab("Box-Cox Volume") + xlab("Date")
+ggplotly(l, dynamicTicks = TRUE)
 ```
 
-
-```{r}
-
-p5 <- canadian_gas |>  autoplot(box_cox(Volume,lambda = 0.5767648)) + ggtitle("Box-Cox, lambda = 0.5767648")
-
-p5
-
-```
-
-
-
+### ¿Es útil realizar una transformación de Box-Cox a los datos canadian_gas? ¿Por qué sí o por qué no?
 
 
 # Ejercicio 4
 
 El dataset fma::plastics tiene información de las ventas mensuales (medidas en miles) del producto A para un productor de plásticos, a lo largo de cinco años.
 
-Grafique la serie de tiempo para el producto A. ¿Identifica algún componente de tendencia-ciclo y/o estacional?
-Utilice una descomposición clásica multiplicativa para calcular el componente de tendencia y estacional.
-¿Los resultados coinciden con su respuesta al inciso i)?
-Calcule y grafique los datos desestacionalizados.
-Cambie, manualmente, una observación para que sea un outlier (p. ej., sume 500 a una observación). Vuelva a estimar los datos desestacionalizados. ¿Cuál fue el efecto de ese outlier?
-¿Hace alguna diferencia que el outlier se encuentre cerca del final de la serie o más alrededor del centro?
+```{r}
+plastic <- fma::plastics
+plastic
+tsbl_plastics <- as_tsibble(plastic)
+tsbl_plastics
+```
+
+
+## i. Grafique la serie de tiempo para el producto A. ¿Identifica algún componente de tendencia-ciclo y/o estacional?
+
+```{r}
+pl2 <- tsbl_plastics |> 
+  autoplot(value) + xlab("Year") + ylab("Ventas") + ggtitle("Ventas de Plástico")
+ggplotly(pl2, dynamicTicks = TRUE)
+```
+
+```{r}
+tsbl_plastics |> 
+  gg_tsdisplay(value, plot_type="auto")
+```
+
+Las ventas del plástico es un componente estacional; en la gráfica se puede apreciar como forma ciclos de manera anual, por lo que se puede decir que la serie de tiempo tiene una estacionalidad anual.
+
+## ii. Utilice una descomposición clásica multiplicativa para calcular el componente de tendencia y estacional.
+
+```{r}
+plastics_decomp <- tsbl_plastics |> 
+  model(
+    clasica=classical_decomposition(value,
+                                    type="multiplicative")
+  )
+```
+
+
+```{r}
+#| warning: false
+plastics_components <- plastics_decomp |> 
+  components()
+plastics_components
+
+plastics_components |> 
+  autoplot()
+```
+
+
+## iii. ¿Los resultados coinciden con su respuesta al inciso i)?
+
+Si coinciden ya que al hacer la descomposición de la serie de tiempo vemos en la parte de estacionalidad que hay 5 ciclos que coinciden con la cantidad de años de los que se tiene información, entonces se puede concluir que las ventas de plástico de esta serie de tiempo tienen una estacionalidad anual.
+
+## iv. Calcule y grafique los datos desestacionalizados.
+
+```{r}
+plc <- plastics_components |>
+  select(c(index,season_adjust))
+plc
+```
+
+```{r}
+plc2 <- plc |> 
+  autoplot(season_adjust) + ggtitle("Ventas de Plástico (Desestacionalizadas)")
+ggplotly(plc2, dynamicTicks = TRUE)
+```
+
+
+## v. Cambie, manualmente, una observación para que sea un outlier (p. ej., sume 500 a una observación). Vuelva a estimar los datos desestacionalizados. ¿Cuál fue el efecto de ese outlier?
+
+## vi. ¿Hace alguna diferencia que el outlier se encuentre cerca del final de la serie o más alrededor del centro?
