@@ -1,6 +1,6 @@
 ---
 title: "Ejercicio 1 Clase"
-author: "Equipo"
+author: "Luis Márquez e Ivanna Herrera"
 format:
   html:
     embed-resources: true
@@ -34,7 +34,7 @@ global
 
 ```{r}
 p <- global |> 
-  autoplot(GDP_per_capita) + theme(legend.position = "none") + ggtitle("PIB per cápita por país")
+  autoplot(GDP_per_capita) + theme(legend.position = "none") + ggtitle("PIB per cápita por país") + xlab("Date")
 ggplotly(p, dynamicTicks = TRUE)
 ```
 
@@ -75,11 +75,11 @@ Grafique las siguientes series de tiempo y transfórmelas y/o ajústelas si lo c
 eua <- global |> 
   filter(Country == "United States")
 eua |> 
-  autoplot(GDP)
+  autoplot(GDP) + xlab("Date")
 eua |> 
-  autoplot(log(GDP)) + ggtitle("Transformación Logarítmica")
+  autoplot(log(GDP)) + ggtitle("Transformación Logarítmica") + xlab("Date")
 eua |> 
-  autoplot(GDP_per_capita) + ggtitle("Transformación por población")
+  autoplot(GDP_per_capita) + ggtitle("Transformación por población") + xlab("Date")
 ```
 
 
@@ -89,11 +89,11 @@ eua |>
 mex <- global |> 
   filter(Country == "Mexico")
 mex |> 
-  autoplot(GDP)
+  autoplot(GDP) + xlab("Date")
 mex |> 
-  autoplot(log(GDP)) + ggtitle("Transformación Logarítmica")
+  autoplot(log(GDP)) + ggtitle("Transformación Logarítmica") + xlab("Date")
 mex |> 
-  autoplot(GDP_per_capita) + ggtitle("Transformación por población")
+  autoplot(GDP_per_capita) + ggtitle("Transformación por población") + xlab("Date")
 ```
 
 ## Demanda de electricidad en el estado de Victoria (Australia), de vic_elec.
@@ -133,6 +133,7 @@ ggplotly(l, dynamicTicks = TRUE)
 
 ### ¿Es útil realizar una transformación de Box-Cox a los datos canadian_gas? ¿Por qué sí o por qué no?
 
+No, porque si bien el volumen cambia, el comportamiento general de la serie no, ya que su tendencia y forma general se mantienen iguales además que la varianza de la serie se mantiene muy similar. Uno de los objetivos principales de las transformaciones es reducir la varianza de la serie para hacer pronósticos de manera más adecuada, sin embargo, en este caso al hacer una transformación de Box-Cox vemos que se mantienen muy similares tanto la varianza y la tendencia de la serie por lo que la transformación realmenete no nos ayuda.
 
 # Ejercicio 4
 
@@ -197,7 +198,7 @@ plc
 
 ```{r}
 plc2 <- plc |> 
-  autoplot(season_adjust) + ggtitle("Ventas de Plástico (Desestacionalizadas)")
+  autoplot(season_adjust) + ggtitle("Ventas de Plástico (Desestacionalizadas)") + xlab("Date") + ylab("Ventas")
 ggplotly(plc2, dynamicTicks = TRUE)
 ```
 

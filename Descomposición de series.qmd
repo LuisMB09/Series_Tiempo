@@ -9,7 +9,6 @@ library(tidyverse)
 library(fpp3)
 ```
 
-
 ```{r}
 empleo_tsbl <- us_employment |> 
   filter(year(Month)>=1990, Title=="Retail Trade") |> 
@@ -26,8 +25,8 @@ empleo_tsbl <- us_employment |>
 autoplot(empleo_tsbl)
 ```
 
-
 ## Classical decomposition
+
 ```{r}
 empleo_decomp <- empleo_tsbl |> 
   model(
@@ -61,6 +60,3 @@ empleo_stl |>
   components() |> 
   autoplot()
 ```
-
-
-
