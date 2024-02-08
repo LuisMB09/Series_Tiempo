@@ -99,17 +99,23 @@ mex |>
 ## Demanda de electricidad en el estado de Victoria (Australia), de vic_elec.
 
 ```{r}
-vic_elec |> 
+ve <- vic_elec |> 
   autoplot(Demand)
-vic_elec |> 
-  autoplot(log(Demand)) + ggtitle("Transformación Logarítmica")
+ggplotly(ve, dynamicTicks = TRUE)
 ```
+
+```{r}
+ve_log <- vic_elec |> 
+  autoplot(log(Demand)) + ggtitle("Transformación Logarítmica")
+ggplotly(ve_log, dynamicTicks = TRUE)
+```
+
 
 ### ¿Qué efecto tuvo la transformación?
 
-* EUA: 
-* México:
-* Victoria:
+* EUA: En la gráfica original del PIB se puede ver un crecimiento exponencial, sin embargo, al utilizar la transformación logarítmica la serie de tiempo toma una forma más lineal lo cual ayuda al momento de hacer pronósticos del PIB ya que es más sencillo pronosticar a futuro el comportamiento de una línea. En la transformación a PIB per capita sigue con comportamiento exponencial y muy similar a la del PIB, esta ayuda a comparar con otros países ajustando a las distintas poblaciones que puedan tener.
+* México: En la gráfica original del PIB se puede ver un crecimiento exponencial con algunas subidas y bajadas fuertes, sin embargo, al utilizar la transformación logarítmica la serie de tiempo al igual que con EUA se vuelve más lineal lo cual lo hace más sencilla de pronosticar y las subidas y bajadas que tiene se reducen quitando así el ruido.. En la transformación a PIB per capita sigue el comportamiento es muy similar al PIB y de igual manera sirve para comparar con otros países.
+* Victoria: Como el intervalo de tiempo es de 30 minutos durante 3 años son muchos datos con los que se cuenta, al hacer la transformación logarítmica en general la serie de tiempo se ve muy parecida manteniendo la misma estacionalidad, nomás la proporción del eje "y" se reduce al usar transformación logarítmica.
 
 # Ejercicio 3
 
