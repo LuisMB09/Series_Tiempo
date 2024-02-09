@@ -192,7 +192,7 @@ plastics_components |>
 
 ## iii. ¿Los resultados coinciden con su respuesta al inciso i)?
 
-Si coinciden, ya que al hacer la descomposición de la serie de tiempo vemos en la parte de estacionalidad que hay 5 ciclos que coinciden con la cantidad de años de los que se tiene información, entonces se puede concluir que las ventas de plástico de esta serie de tiempo tienen una estacionalidad anual.
+Si coinciden, ya que al hacer la descomposición de la serie de tiempo vemos en la parte de estacionalidad que hay 5 ciclos que coinciden con la cantidad de años de los que se tiene información, entonces se puede concluir que las ventas de plástico de esta serie de tiempo tienen una estacionalidad anual. También en la descomposición de la tendencia se ve a la alza con una ligera caída hacia el final.
 
 ## iv. Calcule y grafique los datos desestacionalizados.
 
