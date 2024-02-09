@@ -1,0 +1,27 @@
+---
+title: "Clase_2"
+author: "Luis Márquez"
+format: html
+editor: visual
+---
+
+```{r}
+#| warning: false
+library(tidyverse) # data science
+library(fpp3) # ts
+```
+
+```{r}
+aus_accommodation
+```
+
+```{r}
+aus_accommodation |> 
+  pivot_longer(cols = Takings:CPI, names_to="variable",
+               values_to = "valor") |> 
+  features(valor,
+           list(media = mean)
+           ) |> 
+  pivot_wider(names_from = variable, values_from = media)
+```
+
