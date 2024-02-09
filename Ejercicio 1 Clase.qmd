@@ -259,7 +259,7 @@ ggplotly(plcodm, dynamicTicks = TRUE)
 
 * ¿Cuál fue el efecto de ese outlier?
 
-En general toda la serie se ve igual a la serie desestacionalizada sin el oulier manteniendo una tendencia parecidad, así como sus cambios. Justo en el punto del outlier se eleva bastante la gráfica y luego vuelve a la normalidad, esto genera algo de ruido ya que hay una variación bastante grande. Como esta serie de tiempo con el outlier ya esta desestacionalizada y sigue teniendo un cambio tan grande vemos que hacer esta transformación no es tan buena para lidiar con los posibles outliers que tenga una serie de tiempo.
+El cambio más grade se ve en el punto del outlier, donde a pesar de haber desestacionalizado la serie se sigue viendo como un outlier. Además de esto en general hay cambios a lo largo de toda la serie, el inicio y final de la serie tiene cambios ligeros con unos cuantos picos más y hay algunas variaciones más grandes durante la serie, por lo que un outlier al centro de los datos si tiene efectos incluso después de haber desestacionalizado.
 
 ## vi. ¿Hace alguna diferencia que el outlier se encuentre cerca del final de la serie o más alrededor del centro?
 
@@ -306,4 +306,4 @@ plcodf <- pl_com_outf |>
 ggplotly(plcodf, dynamicTicks = TRUE)
 ```
 
-En esta serie de tiempo en específico no hace mucha diferencia que exista un outlier en medio de la serie o al final, en ambos casos después de desestacionalizar la serie justo en el punto donde se encuentra el outlier sigue existiendo un cambio bastante grande, sin importar si fue a la mitad o al final de la serie. Esto se debe que a final de cuentas la serie de tiempo desestacionalizada solo es una división y si el valor del outlier es bastante alto entonces al realizar la división éste valor seguira siendo alto en comparación al resto de valores de la serie de tiempo.
+Si hay una diferencia entre un outlier en medio de la serie o al final al momento de desestacionalizarla. Si comparamos la serie desestacionalizada sin outlier (original) contra la del outlier en medio vemos que además de existir una gran diferencia justo en un punto, hay varias partes de la gráfica que cambian tanto al inicio como al final generando ciertas variaciones más grandes de lo normal. En cambio la serie con outlier al final, se mantiene igual a la original todo el tiempo e excepción de la parte final con el outlier. Esto nos dice que un outlier en medio de la serie de tiempo tiene un mayor efecto al momento de destacionalizar que si tuviera un outlier al final.
