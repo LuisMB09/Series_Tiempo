@@ -259,7 +259,7 @@ ggplotly(plcodm, dynamicTicks = TRUE)
 
 * ¿Cuál fue el efecto de ese outlier?
 
-El cambio más grade se ve en el punto del outlier, donde a pesar de haber desestacionalizado la serie se sigue viendo como un outlier. Además de esto en general hay cambios a lo largo de toda la serie, el inicio y final de la serie tiene cambios ligeros con unos cuantos picos más y hay algunas variaciones más grandes durante la serie, por lo que un outlier al centro de los datos si tiene efectos incluso después de haber desestacionalizado.
+En la serie deestacionalizada se seguía viendo un cambio brusco, además en la tendencia la modifica un poco antes y después del outlier haciendo sea distinta, también el cambio más grande fue en la estacionalidad ya que el cambio brusco lo repetía las 5 veces que hay un ciclo cuando solo ocurrió una vez, cambiando así bastante los componentes de la serie.
 
 ## vi. ¿Hace alguna diferencia que el outlier se encuentre cerca del final de la serie o más alrededor del centro?
 
@@ -284,6 +284,13 @@ plastics_decomp3 <- tsbl_plastics3 |>
 #| warning: false
 plastics_components3 <- plastics_decomp3 |> 
   components()
+plastics_components3
+
+plastics_components3 |> 
+  autoplot()
+
+plastics_components |> 
+  autoplot()
 ```
 
 
@@ -306,4 +313,14 @@ plcodf <- pl_com_outf |>
 ggplotly(plcodf, dynamicTicks = TRUE)
 ```
 
-Si hay una diferencia entre un outlier en medio de la serie o al final al momento de desestacionalizarla. Si comparamos la serie desestacionalizada sin outlier (original) contra la del outlier en medio vemos que además de existir una gran diferencia justo en un punto, hay varias partes de la gráfica que cambian tanto al inicio como al final generando ciertas variaciones más grandes de lo normal. En cambio la serie con outlier al final, se mantiene igual a la original todo el tiempo e excepción de la parte final con el outlier. Esto nos dice que un outlier en medio de la serie de tiempo tiene un mayor efecto al momento de destacionalizar que si tuviera un outlier al final.
+Si hay una diferencia entre un outlier en medio de la serie o al final al momento de desestacionalizarla. Si comparamos la serie desestacionalizada sin outlier (original) contra la del outlier en medio vemos que además de existir una gran diferencia justo en un punto, varias partes de la gráfica cambian, como algunas variaciones que no existían además del cambio en toda la estacionalidad. 
+
+En cambio la serie con outlier al final, la serie ya desestacionalizada se parecen bastante y hacia el final de esta cambia, la tendenccia mantiene una forma muy similar pero se ve ligeramente más inclinada hacia arriba que sin el outlier cuando se acerca al final, pero la más distinto es que a diferencia de un outlier en medio, en este caso no cambia la estacionalidad y se mantiene igual, por lo que afecta más a la serie que exista un outlier en medio de los datos.
+
+```{r}
+# Otra manera para cambiar observación
+#tabla2 <- tabla
+#tabla2$value[15] <- tabla$value[15] + 500
+#tabla2
+```
+
