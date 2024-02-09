@@ -1,8 +1,14 @@
 ---
 title: "Clase_2"
 author: "Luis Márquez"
-format: html
-editor: visual
+format:
+  html:
+    embed-resources: true
+    theme:
+      light: minty
+      dark: darkly
+toc: true
+df-print: paged
 ---
 
 ```{r}
@@ -18,7 +24,9 @@ aus_accommodation
 ```{r}
 aus_accommodation_long <- aus_accommodation |> 
   pivot_longer(cols = Takings:CPI, names_to="variable",
-               values_to = "valor") |> 
+               values_to = "valor")
+
+aus_accommodation_long |> 
   features(valor,
            list(media = mean,
                 desv_std = sd,
@@ -27,10 +35,17 @@ aus_accommodation_long <- aus_accommodation |>
                 mediana = median)
            ) #|> 
   #pivot_wider(names_from = variable, values_from = media:mediana)
+aus_accommodation_long
 ```
 
 
 ```{r}
-aus_accommodation_long
+aus_accommodation_long |> 
+  features(valor, feat_stl)
+```
+
+```{r}
+aus_accommodation_long |> 
+  features(valor, features = guerrero)
 ```
 
