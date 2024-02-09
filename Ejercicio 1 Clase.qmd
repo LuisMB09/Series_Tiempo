@@ -167,7 +167,7 @@ tsbl_plastics |>
 
 * ¿Identifica algún componente de tendencia-ciclo y/o estacional?
 
-Las ventas del plástico es un componente estacional; en la gráfica se puede apreciar como forma ciclos de manera anual, por lo que se puede decir que la serie de tiempo tiene una estacionalidad anual.
+Las ventas del plástico es un componente estacional; en la gráfica se puede apreciar como forma ciclos de manera anual, por lo que se puede decir que la serie de tiempo tiene una estacionalidad anual, además de contar con tendencia a la alza.
 
 ## ii. Utilice una descomposición clásica multiplicativa para calcular el componente de tendencia y estacional.
 
