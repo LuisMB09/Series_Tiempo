@@ -90,6 +90,14 @@ stocks_data |>
 ```
 
 ```{r}
+sd <- stocks_data |> 
+  autoplot(adjusted)
+ggplotly(sd, dynamicTicks = TRUE) |> 
+  rangeslider()
+```
+
+
+```{r}
 #| warning: false
 stocks_data |> 
   ggplot(aes(x = date, open = open, high = high, low = low, close = close))+
@@ -138,7 +146,7 @@ us_retail_employment <- us_employment |>
   select(-Series_ID)
 
 # Para crear una carpeta
-dir.create("datos")
+#dir.create("datos")
 us_retail_employment |> 
   write_csv("datos/empleo_eeuu.csv")
 ```

@@ -82,7 +82,6 @@ eua |>
   autoplot(GDP_per_capita) + ggtitle("Transformación por población") + xlab("Date")
 ```
 
-
 ## PIB de México, también de global_economy.
 
 ```{r}
@@ -153,7 +152,7 @@ tsbl_plastics
 ```
 
 
-## i. Grafique la serie de tiempo para el producto A. ¿Identifica algún componente de tendencia-ciclo y/o estacional?
+## i. Grafique la serie de tiempo para el producto A.
 
 ```{r}
 pl2 <- tsbl_plastics |> 
@@ -165,6 +164,8 @@ ggplotly(pl2, dynamicTicks = TRUE)
 tsbl_plastics |> 
   gg_tsdisplay(value, plot_type="auto")
 ```
+
+* ¿Identifica algún componente de tendencia-ciclo y/o estacional?
 
 Las ventas del plástico es un componente estacional; en la gráfica se puede apreciar como forma ciclos de manera anual, por lo que se puede decir que la serie de tiempo tiene una estacionalidad anual.
 
@@ -189,26 +190,120 @@ plastics_components |>
   autoplot()
 ```
 
-
 ## iii. ¿Los resultados coinciden con su respuesta al inciso i)?
 
-Si coinciden ya que al hacer la descomposición de la serie de tiempo vemos en la parte de estacionalidad que hay 5 ciclos que coinciden con la cantidad de años de los que se tiene información, entonces se puede concluir que las ventas de plástico de esta serie de tiempo tienen una estacionalidad anual.
+Si coinciden, ya que al hacer la descomposición de la serie de tiempo vemos en la parte de estacionalidad que hay 5 ciclos que coinciden con la cantidad de años de los que se tiene información, entonces se puede concluir que las ventas de plástico de esta serie de tiempo tienen una estacionalidad anual.
 
 ## iv. Calcule y grafique los datos desestacionalizados.
 
 ```{r}
-plc <- plastics_components |>
+pl_com <- plastics_components |>
   select(c(index,season_adjust))
-plc
+pl_com
 ```
 
 ```{r}
-plc2 <- plc |> 
+pl_com_des <- pl_com |> 
   autoplot(season_adjust) + ggtitle("Ventas de Plástico (Desestacionalizadas)") + xlab("Date") + ylab("Ventas")
-ggplotly(plc2, dynamicTicks = TRUE)
+ggplotly(pl_com_des, dynamicTicks = TRUE)
 ```
 
 
-## v. Cambie, manualmente, una observación para que sea un outlier (p. ej., sume 500 a una observación). Vuelva a estimar los datos desestacionalizados. ¿Cuál fue el efecto de ese outlier?
+## v. Cambie, manualmente, una observación para que sea un outlier (p. ej., sume 500 a una observación). Vuelva a estimar los datos desestacionalizados.
+
+```{r}
+tsbl_plastics2 <- tsbl_plastics |> 
+  mutate(value = ifelse(row_number() == 32, 1800, value))
+```
+   
+```{r}
+inte <- tsbl_plastics2 |> 
+  autoplot(value) + ggtitle("Ventas de Plástico con Outlier Medio") + xlab("Date") + ylab("Ventas")
+ggplotly(inte, dynamicTicks = TRUE)
+```
+
+
+```{r}
+plastics_decomp2 <- tsbl_plastics2 |> 
+  model(
+    clasica=classical_decomposition(value,
+                                    type="multiplicative")
+  )
+```
+
+```{r}
+#| warning: false
+plastics_components2 <- plastics_decomp2 |> 
+  components()
+plastics_components2
+
+plastics_components2 |> 
+  autoplot()
+```
+
+```{r}
+pl_com_outm <- plastics_components2 |>
+  select(c(index,season_adjust))
+```
+
+```{r}
+pl_com_des <- pl_com |> 
+  autoplot(season_adjust) + ggtitle("Ventas de Plástico (Desestacionalizadas)") + xlab("Date") + ylab("Ventas")
+ggplotly(pl_com_des, dynamicTicks = TRUE)
+
+plcodm <- pl_com_outm |> 
+  autoplot(season_adjust) + ggtitle("Ventas de Plástico (Desestacionalizadas) con Outlier Medio") + xlab("Date") + ylab("Ventas")
+ggplotly(plcodm, dynamicTicks = TRUE)
+
+```
+
+* ¿Cuál fue el efecto de ese outlier?
+
+En general toda la serie se ve igual a la serie desestacionalizada sin el oulier manteniendo una tendencia parecidad, así como sus cambios. Justo en el punto del outlier se eleva bastante la gráfica y luego vuelve a la normalidad, esto genera algo de ruido ya que hay una variación bastante grande. Como esta serie de tiempo con el outlier ya esta desestacionalizada y sigue teniendo un cambio tan grande vemos que hacer esta transformación no es tan buena para lidiar con los posibles outliers que tenga una serie de tiempo.
 
 ## vi. ¿Hace alguna diferencia que el outlier se encuentre cerca del final de la serie o más alrededor del centro?
+
+```{r}
+tsbl_plastics3 <- tsbl_plastics |> 
+  mutate(value = ifelse(row_number() == 56, 2000, value))
+
+intef <- tsbl_plastics3 |> 
+  autoplot(value) + ggtitle("Ventas de Plástico con Outlier Final") + xlab("Date") + ylab("Ventas")
+ggplotly(intef, dynamicTicks = TRUE)
+```
+
+```{r}
+plastics_decomp3 <- tsbl_plastics3 |> 
+  model(
+    clasica=classical_decomposition(value,
+                                    type="multiplicative")
+  )
+```
+
+```{r}
+#| warning: false
+plastics_components3 <- plastics_decomp3 |> 
+  components()
+```
+
+
+```{r}
+pl_com_outf <- plastics_components3 |>
+  select(c(index,season_adjust))
+```
+
+```{r}
+pl_com_des <- pl_com |> 
+  autoplot(season_adjust) + ggtitle("Ventas de Plástico (Desestacionalizadas)") + xlab("Date") + ylab("Ventas")
+ggplotly(pl_com_des, dynamicTicks = TRUE)
+
+plcodm <- pl_com_outm |> 
+  autoplot(season_adjust) + ggtitle("Ventas de Plástico (Desestacionalizadas) con Outlier Medio") + xlab("Date") + ylab("Ventas")
+ggplotly(plcodm, dynamicTicks = TRUE)
+
+plcodf <- pl_com_outf |> 
+  autoplot(season_adjust) + ggtitle("Ventas de Plástico (Desestacionalizadas) con Outlier Final") + xlab("Date") + ylab("Ventas")
+ggplotly(plcodf, dynamicTicks = TRUE)
+```
+
+En esta serie de tiempo en específico no hace mucha diferencia que exista un outlier en medio de la serie o al final, en ambos casos después de desestacionalizar la serie justo en el punto donde se encuentra el outlier sigue existiendo un cambio bastante grande, sin importar si fue a la mitad o al final de la serie. Esto se debe que a final de cuentas la serie de tiempo desestacionalizada solo es una división y si el valor del outlier es bastante alto entonces al realizar la división éste valor seguira siendo alto en comparación al resto de valores de la serie de tiempo.
