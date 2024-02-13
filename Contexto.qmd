@@ -12,6 +12,28 @@ df-print: paged
 ---
 
 ```{r}
+#| warning: false
+library(tidyverse) # data science
+library(fpp3) # ts
+library(plotly) # interactive plots
+library(patchwork) # handling many plots in one figure
+library(tidyquant)
+library(tsibble)
+library(tibble)
+```
 
+```{r}
+data <- read.csv("Modificacion.csv")
+data <- as_tibble(data)
+data$State <- as.factor(data$State)
+data$Date <- as.Date(data$Date)
+data <- as_tsibble(data, index = Date, key = State)
+data
+```
+
+```{r}
+d <- data |> 
+  autoplot(Percentage) +  ggtitle("Porcentaje de Desempleo por Estado") + xlab("Date") + ylab("Porcentaje") + theme(legend.position = "none")
+ggplotly(d, dynamicTicks = TRUE)
 ```
 
