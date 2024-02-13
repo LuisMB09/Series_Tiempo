@@ -1,0 +1,17 @@
+---
+title: "Contexto"
+author: "Luis Márquez"
+format:
+  html:
+    embed-resources: true
+    theme:
+      light: minty
+      dark: darkly
+toc: true
+df-print: paged
+---
+
+```{r}
+
+```
+
