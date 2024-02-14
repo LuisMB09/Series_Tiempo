@@ -36,3 +36,11 @@ d <- data |>
   autoplot(Percentage) +  ggtitle("Porcentaje de Desempleo por Estado") + xlab("Date") + ylab("Porcentaje") + theme(legend.position = "none")
 ggplotly(d, dynamicTicks = TRUE)
 ```
+
+```{r}
+data |> 
+  filter(Date == "2023-09-01") |> 
+  arrange(desc(Percentage))
+```
+
+
