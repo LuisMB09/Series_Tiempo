@@ -70,6 +70,8 @@ mex_fit |>
   gg_tsresiduals()
 ```
 
+## Naive
+
 ```{r}
 #| warning: false
 mex_fit |> 
@@ -77,10 +79,33 @@ mex_fit |>
   gg_tsresiduals()
 ```
 
+## Drift
+
 ```{r}
 #| warning: false
 mex_fit |> 
   select(drift) |> 
   gg_tsresiduals()
+```
+
+#Forecast
+
+```{r}
+mex_fc <- mex_fit |> 
+  forecast(h = "6 years")
+
+mex_fc
+
+mex_fc |> 
+  autoplot(mex)
+
+mex_fc |> 
+  autoplot(mex) + 
+  facet_wrap(~.model)
+
+mex_fc |> 
+  autoplot(mex) + 
+  facet_wrap(~.model) + 
+  theme(legend.position = "bottom")
 ```
 
