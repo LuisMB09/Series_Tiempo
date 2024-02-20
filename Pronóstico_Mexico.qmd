@@ -1,0 +1,29 @@
+---
+title: "Pronóstico"
+author: "Luis Márquez"
+format:
+  html:
+    embed-resources: true
+    theme:
+      light: minty
+      dark: darkly
+toc: true
+df-print: paged
+---
+
+```{r}
+#| warning: false
+library(tidyverse)
+library(fpp3)
+```
+
+```{r}
+#| warning: false
+mex <- global_economy |> 
+  filter(Country=='Mexico') |> 
+  select(-c(Country, Code))
+
+mex |> 
+  autoplot(Growth)
+```
+
