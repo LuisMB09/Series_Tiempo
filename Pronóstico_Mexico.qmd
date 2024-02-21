@@ -90,7 +90,7 @@ mex_fit |>
   gg_tsresiduals()
 ```
 
-#Forecast
+# Forecast
 
 ```{r}
 #| warning: false
