@@ -15,6 +15,7 @@ df-print: paged
 #| warning: false
 library(tidyverse)
 library(fpp3)
+library(plotly)
 ```
 
 ```{r}
@@ -91,6 +92,8 @@ mex_fit |>
 #Forecast
 
 ```{r}
+#| warning: false
+
 mex_fc <- mex_fit |> 
   forecast(h = "6 years")
 
