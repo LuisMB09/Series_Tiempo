@@ -61,7 +61,7 @@ mex_fit |>
   features(.innov, ljung_box, lag = 10, dof = 0)
 ```
 
-Como el p-value de los 3 modelos es mayor a nuestra $\alpha$: $p_{value} = 0.05, **NO RECHAZAMOS** $H_0 : \text{"Los residuos son ruido blanco"}$.
+Como el p-value de los 3 modelos es mayor a nuestra $\alpha$: $p_{value} = 0.05$, **NO RECHAZAMOS** $H_0 : \text{"Los residuos son ruido blanco"}$.
 
 ## Media
 
