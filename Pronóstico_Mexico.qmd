@@ -28,8 +28,9 @@ mex <- global_economy |>
 mex |> 
   features(Growth, features = guerrero)
 
-mex |> 
+m <- mex |> 
   autoplot(Growth)
+ggplotly(m, dynamicTicks = TRUE)
 
 mex |> 
   autoplot(box_cox(Growth, lambda = 0.7249))
