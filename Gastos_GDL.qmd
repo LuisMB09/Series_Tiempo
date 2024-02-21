@@ -105,7 +105,7 @@ datos_fit |>
 #| warning: false
 
 datos_fc <- datos_fit |> 
-  forecast(h = "15 days")
+  forecast(h = "14 days")
 
 datos_fc
 
