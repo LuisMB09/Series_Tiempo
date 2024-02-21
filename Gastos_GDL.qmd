@@ -34,6 +34,10 @@ datos$Date <- as.Date(datos$Date)
 ```{r}
 datos <- as_tsibble(datos, index = Date)
 datos
+
+d <- datos |> 
+  autoplot(Expense)
+ggplotly(d, dynamicTicks = TRUE)
 ```
 
 # Estimación de modelos
@@ -109,4 +113,40 @@ datos_fc |>
   autoplot(datos) + 
   facet_wrap(~.model) + 
   theme(legend.position = "bottom")
+
 ```
+
+Los mejores son media y snaive
+
+```{r}
+datos_fc |> 
+  filter(.model == "media") |> 
+  autoplot()
+
+
+m <- datos_fc |> 
+  filter(.model == 'media')
+m <- as_tibble(m)
+m <- as_tsibble(m, index = Date)
+km <- m |> 
+  select(c(Date, .mean)) |> 
+  autoplot(.mean) + ggtitle("Predicción media") + ylab("Gasto $") + xlab("Fecha")
+ggplotly(km, dynamicTicks = TRUE)
+```
+
+```{r}
+datos_fc |> 
+  filter(.model == "snaive") |> 
+  autoplot()
+
+
+sn <- datos_fc |> 
+  filter(.model == 'snaive')
+sn <- as_tibble(sn)
+sn <- as_tsibble(sn, index = Date)
+ksn <- sn |> 
+  select(c(Date, .mean)) |> 
+  autoplot(.mean) + ggtitle("Predicción seasonal naive") + ylab("Gasto $") + xlab("Fecha")
+ggplotly(ksn, dynamicTicks = TRUE)
+```
+
