@@ -1,0 +1,121 @@
+---
+title: "Prueba"
+author: "Luis Márquez"
+format:
+  html:
+    embed-resources: true
+    theme:
+      light: minty
+      dark: darkly
+toc: true
+df-print: paged
+---
+
+```{r}
+#| warning: false
+library(tidyverse)
+library(fpp3)
+library(plotly)
+library(readxl)
+library(tsibble)
+library(tibble)
+library(zoo)
+library(lubridate)
+```
+
+# Datos
+
+```{r}
+datos <- read_excel("V.xlsx", sheet = 2)
+```
+
+```{r}
+datos$Date <- as.Date(datos$Date)
+```
+
+
+
+```{r}
+datos <- as_tsibble(datos, index = Date)
+datos
+```
+
+# Estimación de modelos
+
+```{r}
+datos_fit <- datos |> 
+  model(
+    media = MEAN(Sales),
+    naive = NAIVE(Sales),
+    snaive = SNAIVE(Sales),
+    drift = RW(Sales ~ drift())
+  )
+datos_fit
+```
+
+# Análisis de residuos
+
+```{r}
+datos_fit |> 
+  augment()
+
+datos_fit |> 
+  augment() |> 
+  features(.innov, ljung_box, lag = 10, dof = 0)
+```
+
+## Media
+
+```{r}
+#| warning: false
+datos_fit |> 
+  select(media) |> 
+  gg_tsresiduals()
+```
+
+## Naive
+
+```{r}
+#| warning: false
+datos_fit |> 
+  select(naive) |> 
+  gg_tsresiduals()
+```
+
+## Seasonal Naive
+
+```{r}
+#| warning: false
+datos_fit |> 
+  select(snaive) |> 
+  gg_tsresiduals()
+```
+
+## Drift
+
+```{r}
+#| warning: false
+datos_fit |> 
+  select(drift) |> 
+  gg_tsresiduals()
+```
+
+# Forecast
+
+```{r}
+#| warning: false
+
+datos_fc <- datos_fit |> 
+  forecast(h = "8 days")
+
+datos_fc
+
+datos_fc |> 
+  autoplot(datos) + 
+  facet_wrap(~.model)
+
+datos_fc |> 
+  autoplot(datos) + 
+  facet_wrap(~.model) + 
+  theme(legend.position = "bottom")
+```
