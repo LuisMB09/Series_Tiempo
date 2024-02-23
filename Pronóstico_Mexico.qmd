@@ -116,6 +116,8 @@ mex_fc |>
 
 Residuo es (original - modelo)
 
+# Ovejas
+
 ```{r}
 aus_livestock |> 
   distinct(Animal)
@@ -140,8 +142,47 @@ ovejas_train <- ovejas |>
 ovejas_train
 ```
 
+### Visualización
+
 ```{r}
 ovejas_train |> 
   autoplot(Count)
+```
+
+### Transformación
+
+```{r}
+lambda <- ovejas_train |> 
+  features(Count, features = guerrero) |> 
+  pull(lambda_guerrero)
+lambda
+
+ovejas_train |> 
+  autoplot(box_cox(Count, lambda))
+```
+
+### Estacionalidad
+
+```{r}
+ovejas_train |> 
+  gg_season(Count)
+ovejas_train |> 
+  gg_season(box_cox(Count, lambda))
+```
+
+```{r}
+# De 0 a 1, marca la fuerza del componente en la serie
+ovejas_train |> 
+  features(Count, feat_stl)
+```
+### STL Descomposición
+
+```{r}
+ot <- ovejas_train |> 
+  model(
+    stl = STL(box_cox(Count, lambda), robust = TRUE)
+  ) |> components() |> 
+  autoplot()
+ggplotly(ot, dynamicTicks = TRUE)
 ```
 
