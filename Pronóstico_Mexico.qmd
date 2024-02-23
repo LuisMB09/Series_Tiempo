@@ -114,3 +114,34 @@ mex_fc |>
   theme(legend.position = "bottom")
 ```
 
+Residuo es (original - modelo)
+
+```{r}
+aus_livestock |> 
+  distinct(Animal)
+```
+
+## Datos
+
+```{r}
+ovejas <- aus_livestock |> 
+  filter(Animal == "Sheep",
+         State == "New South Wales")
+ovejas
+ovejas |> 
+  autoplot(Count)
+```
+
+## Train/Test
+
+```{r}
+ovejas_train <- ovejas |> 
+  filter_index(.~"Dec. 2012")
+ovejas_train
+```
+
+```{r}
+ovejas_train |> 
+  autoplot(Count)
+```
+
