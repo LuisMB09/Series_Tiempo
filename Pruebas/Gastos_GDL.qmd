@@ -150,3 +150,142 @@ ksn <- sn |>
 ggplotly(ksn, dynamicTicks = TRUE)
 ```
 
+# Análisis Mejorado
+
+```{r}
+datos
+```
+
+## Visualización
+
+```{r}
+datos |> 
+  autoplot(Expense) + xlab("Fecha") + ggtitle("Gastos diarios")
+```
+
+## Train/Test
+
+```{r}
+datos_train <- datos |> 
+  filter_index(.~"2024-02-13")
+datos_train
+```
+
+### Visualización
+
+```{r}
+datos_train |> 
+  autoplot(Expense) + xlab("Fecha") + ggtitle("Gastos diarios")
+```
+
+### Transformación
+
+```{r}
+lambda <- datos_train |> 
+  features(Expense, features = guerrero) |> 
+  pull(lambda_guerrero)
+lambda
+
+datos_train |> 
+  autoplot(box_cox(Expense, lambda))
+```
+
+```{r}
+datos_train |> 
+  features(Expense, feat_stl)
+```
+
+### STL Descomposición
+
+```{r}
+datos_train |> 
+  model(
+    stl = STL(Expense, robust = TRUE)
+  ) |> components() |> 
+  autoplot()
+
+datos_train |> 
+  model(
+    stl2 = STL(box_cox(Expense, lambda), robust = TRUE)
+  ) |> components() |> 
+  autoplot()
+```
+
+### Estimación de modelos
+
+```{r}
+datos_fit2 <- datos_train |> 
+  model(
+    mean = MEAN(Expense),
+    mean_bc = MEAN(box_cox(Expense, lambda)),
+    
+    snaive = SNAIVE(Expense),
+    snaive_bc = SNAIVE(box_cox(Expense, lambda)),
+    
+    combi = decomposition_model(
+      STL(Expense, robust = TRUE),
+      SNAIVE(season_week),
+      RW(season_adjust ~ drift())
+    ),
+    combi_bc = decomposition_model(
+      STL(box_cox(Expense, lambda), robust = TRUE),
+      SNAIVE(season_week),
+      RW(season_adjust ~ drift())
+    )
+    
+  )
+datos_fit2
+```
+
+### Análisis de los residuos
+
+```{r}
+#| warning: false
+datos_fit2 |> 
+  select(mean) |> 
+  gg_tsresiduals()
+
+datos_fit2 |> 
+  select(mean_bc) |> 
+  gg_tsresiduals()
+
+datos_fit2 |> 
+  select(snaive) |> 
+  gg_tsresiduals()
+
+datos_fit2 |> 
+  select(snaive_bc) |> 
+  gg_tsresiduals()
+
+datos_fit2 |> 
+  select(combi) |> 
+  gg_tsresiduals()
+
+datos_fit2 |> 
+  select(combi_bc) |> 
+  gg_tsresiduals()
+
+datos_fit2 |> 
+  augment() |> 
+  features(.innov, ljung_box, dof = 0, lag = 14)
+```
+
+### Análisis de error $E$
+
+```{r}
+accuracy(datos_fit2) |> 
+  arrange(RMSE)
+```
+
+## Forecast
+
+```{r}
+datos_fc2 <- datos_fit2 |> 
+  forecast(h = "14 days")
+
+datos_fc2
+
+datos_fc2 |> 
+  autoplot(datos, level = NULL)
+```
+
