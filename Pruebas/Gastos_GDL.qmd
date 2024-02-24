@@ -420,17 +420,17 @@ ggplotly(me_p, dynamicTicks = TRUE)
 #### Combinado
 
 ```{r}
-fmean |> 
-  filter(.model == "mean") |> 
-  autoplot() + xlab("Fecha") + ggtitle("Predicción Mean")
+fcombi |> 
+  filter(.model == "combi") |> 
+  autoplot() + xlab("Fecha") + ggtitle("Predicción Combinado")
 
-me <- fmean |> 
-  filter(.model == 'mean')
-me <- as_tibble(me)
-me <- as_tsibble(me, index = Date)
-me_p <- me |> 
+co <- fcombi |> 
+  filter(.model == 'combi')
+co <- as_tibble(co)
+co <- as_tsibble(co, index = Date)
+co_p <- co |> 
   select(c(Date, .mean)) |> 
-  autoplot(.mean) + ggtitle("Predicción Mean") + xlab("Fecha")
-ggplotly(me_p, dynamicTicks = TRUE)
+  autoplot(.mean) + ggtitle("Predicción Combinado") + xlab("Fecha")
+ggplotly(co_p, dynamicTicks = TRUE)
 ```
 
