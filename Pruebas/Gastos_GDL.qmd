@@ -289,6 +289,8 @@ datos_fc2 |>
   autoplot(datos, level = NULL) + xlab("Fecha") + ggtitle("Comparación de predicción")
 ```
 
+### Mejora de forecast
+
 ```{r}
 datos2 <- datos_fc2
 datos2 <- subset(datos2, .model != "combi_bc")
@@ -300,7 +302,7 @@ mod <- subset(mod, select = -snaive_bc)
 mod <- subset(mod, select = -combi_bc)
 
 datos2 <- mod |> 
-  forecast(h = "14 days")
+  forecast(h = "10 days")
 
 datos2
 
@@ -308,4 +310,61 @@ datos2 |>
   autoplot(datos, level = NULL) + xlab("Fecha") + ggtitle("Comparación de predicción")
 
 ```
+
+### Error de forecast
+
+```{r}
+datos2 |> 
+  accuracy(datos) |> 
+  arrange(MAPE)
+```
+
+## Pronósticos
+
+```{r}
+datos |> 
+  model(
+    snaive = SNAIVE(Expense)
+  ) |> 
+  
+  forecast(h = "14 days") |> 
+  autoplot(datos) + xlab("Fecha") + ggtitle("Seasonal Naive")
+
+datos |> 
+  model(
+    mean = MEAN(Expense)
+  ) |> 
+  
+  forecast(h = "14 days") |> 
+  autoplot(datos) + xlab("Fecha") + ggtitle("Mean")
+
+datos |> 
+  model(
+    mean_bc = MEAN(box_cox(Expense, lambda))
+  ) |> 
+  
+  forecast(h = "14 days") |> 
+  autoplot(datos, level = NULL) + xlab("Fecha") + ggtitle("Mean Box-Cox")
+
+datos |> 
+  model(
+    combi = decomposition_model(
+      STL(Expense, robust = TRUE),
+      SNAIVE(season_week),
+      RW(season_adjust ~ drift())
+    )
+  ) |> 
+  
+  forecast(h = "14 days") |> 
+  autoplot(datos) + xlab("Fecha") + ggtitle("Combinado")
+```
+
+
+
+```{r}
+datos_fc2 |> 
+  filter(.model == "snaive") |> 
+  autoplot()
+```
+
 
