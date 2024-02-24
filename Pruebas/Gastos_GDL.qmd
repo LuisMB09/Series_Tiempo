@@ -342,14 +342,6 @@ datos |>
 
 datos |> 
   model(
-    mean_bc = MEAN(box_cox(Expense, lambda))
-  ) |> 
-  
-  forecast(h = "14 days") |> 
-  autoplot(datos, level = NULL) + xlab("Fecha") + ggtitle("Mean Box-Cox")
-
-datos |> 
-  model(
     combi = decomposition_model(
       STL(Expense, robust = TRUE),
       SNAIVE(season_week),
@@ -361,21 +353,84 @@ datos |>
   autoplot(datos) + xlab("Fecha") + ggtitle("Combinado")
 ```
 
-
+### Separación de pronósticos
 
 ```{r}
-datos_fc2 |> 
-  filter(.model == "snaive") |> 
-  autoplot() + xlab("Fecha") + ggtitle("Seasonal Naive")
+fsna <- datos |> 
+  model(
+    snaive = SNAIVE(Expense)
+  ) |> 
+  
+  forecast(h = "14 days")
 
-sna <- datos_fc2 |> 
+fmean <- datos |> 
+  model(
+    mean = MEAN(Expense)
+  ) |> 
+  forecast(h = "14 days")
+
+fcombi <- datos |> 
+  model(
+    combi = decomposition_model(
+      STL(Expense, robust = TRUE),
+      SNAIVE(season_week),
+      RW(season_adjust ~ drift())
+    )
+  ) |> 
+  
+  forecast(h = "14 days")
+```
+
+### Visualización de pronósticos individuales
+
+#### Seasonal Naive
+
+```{r}
+fsna |> 
+  filter(.model == "snaive") |> 
+  autoplot() + xlab("Fecha") + ggtitle("Predicción Seasonal Naive")
+
+sna <- fsna |> 
   filter(.model == 'snaive')
 sna <- as_tibble(sna)
 sna <- as_tsibble(sna, index = Date)
 sna_p <- sna |> 
   select(c(Date, .mean)) |> 
-  autoplot(.mean) + ggtitle("Predicción Seasonla Naive") + xlab("Fecha")
+  autoplot(.mean) + ggtitle("Predicción Seasonal Naive") + xlab("Fecha")
 ggplotly(sna_p, dynamicTicks = TRUE)
 ```
 
+#### Mean
+
+```{r}
+fmean |> 
+  filter(.model == "mean") |> 
+  autoplot() + xlab("Fecha") + ggtitle("Predicción Mean")
+
+me <- fmean |> 
+  filter(.model == 'mean')
+me <- as_tibble(me)
+me <- as_tsibble(me, index = Date)
+me_p <- me |> 
+  select(c(Date, .mean)) |> 
+  autoplot(.mean) + ggtitle("Predicción Mean") + xlab("Fecha")
+ggplotly(me_p, dynamicTicks = TRUE)
+```
+
+#### Combinado
+
+```{r}
+fmean |> 
+  filter(.model == "mean") |> 
+  autoplot() + xlab("Fecha") + ggtitle("Predicción Mean")
+
+me <- fmean |> 
+  filter(.model == 'mean')
+me <- as_tibble(me)
+me <- as_tsibble(me, index = Date)
+me_p <- me |> 
+  select(c(Date, .mean)) |> 
+  autoplot(.mean) + ggtitle("Predicción Mean") + xlab("Fecha")
+ggplotly(me_p, dynamicTicks = TRUE)
+```
 
