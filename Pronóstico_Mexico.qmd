@@ -178,11 +178,92 @@ ovejas_train |>
 ### STL Descomposición
 
 ```{r}
-ot <- ovejas_train |> 
+ovejas_train |> 
   model(
     stl = STL(box_cox(Count, lambda), robust = TRUE)
   ) |> components() |> 
   autoplot()
-ggplotly(ot, dynamicTicks = TRUE)
 ```
+
+## Estimación del Modelo
+
+```{r}
+ovejas_fit <- ovejas_train |> 
+  model(
+    snaive_bc = SNAIVE(box_cox(Count, lambda)),
+    snaive = SNAIVE(Count),
+    combi_bc = decomposition_model(
+      STL(box_cox(Count, lambda), robust = TRUE),
+      SNAIVE(season_year),
+      RW(season_adjust ~ drift())
+    ),
+    combi = decomposition_model(
+      STL(Count, robust = TRUE),
+      SNAIVE(season_year),
+      RW(season_adjust ~ drift())
+    )
+  )
+ovejas_fit
+```
+
+```{r}
+#| warning: false
+ovejas_fit |> 
+  select(snaive_bc) |> 
+  gg_tsresiduals()
+
+ovejas_fit |> 
+  select(snaive) |> 
+  gg_tsresiduals()
+
+ovejas_fit |> 
+  select(combi) |> 
+  gg_tsresiduals()
+
+ovejas_fit |> 
+  select(combi_bc) |> 
+  gg_tsresiduals()
+
+ovejas_fit |> 
+  augment() |> 
+  features(.innov, ljung_box, dof = 0, lag = 24)
+```
+
+```{r}
+accuracy(ovejas_fit) |> 
+  arrange(MAPE)
+```
+
+## Forecast
+
+```{r}
+ovejas_fc <- ovejas_fit |> 
+  forecast(h = "6 years")
+
+ovejas_fc
+
+ovejas_fc |> 
+  autoplot(ovejas |> filter_index("Jan. 2003" ~ .), level = NULL)
+```
+
+```{r}
+ovejas_fc |> 
+  accuracy(ovejas) |> 
+  arrange(MAPE)
+```
+
+```{r}
+ovejas |> 
+  model(
+    combi_bc = decomposition_model(
+      STL(box_cox(Count, lambda), robust = TRUE),
+      SNAIVE(season_year),
+      RW(season_adjust ~ drift())
+    )
+  ) |> 
+  
+  forecast(h = "6 years") |> 
+  autoplot(ovejas)
+```
+
 
