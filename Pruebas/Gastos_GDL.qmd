@@ -289,7 +289,7 @@ datos_fc2 |>
   autoplot(datos, level = NULL) + xlab("Fecha") + ggtitle("Comparación de predicción")
 ```
 
-### Mejora de forecast
+## Mejora de forecast
 
 ```{r}
 datos2 <- datos_fc2
@@ -353,7 +353,7 @@ datos |>
   autoplot(datos) + xlab("Fecha") + ggtitle("Combinado")
 ```
 
-### Separación de pronósticos
+## Separación de pronósticos
 
 ```{r}
 fsna <- datos |> 
@@ -381,9 +381,7 @@ fcombi <- datos |>
   forecast(h = "14 days")
 ```
 
-### Visualización de pronósticos individuales
-
-#### Seasonal Naive
+### Seasonal Naive
 
 ```{r}
 fsna |> 
@@ -400,7 +398,7 @@ sna_p <- sna |>
 ggplotly(sna_p, dynamicTicks = TRUE)
 ```
 
-#### Mean
+### Mean
 
 ```{r}
 fmean |> 
@@ -417,7 +415,7 @@ me_p <- me |>
 ggplotly(me_p, dynamicTicks = TRUE)
 ```
 
-#### Combinado
+### Combinado
 
 ```{r}
 fcombi |> 
