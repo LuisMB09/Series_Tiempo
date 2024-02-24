@@ -398,6 +398,8 @@ sna_p <- sna |>
 ggplotly(sna_p, dynamicTicks = TRUE)
 ```
 
+Esta predicción da un estimado del comportamiento de mis gastos a futuro, la cual muestra una consistencia en mi comportamiento de acuerdo al día de la semana. Hay picos altos en los fines de semana lo cual coincide con la realidad de gastar más en esos días, y baja entre semana diciendo lo que gastaré cada día, que es igual a lo que gasto en la comida.
+
 ### Mean
 
 ```{r}
@@ -414,6 +416,8 @@ me_p <- me |>
   autoplot(.mean) + ggtitle("Predicción Mean") + xlab("Fecha")
 ggplotly(me_p, dynamicTicks = TRUE)
 ```
+
+Esta predicción no estima mi comportamiento durante la semana pero es un buen pronóstico para saber cuanto necesitaría por semana que es 215 * 7, dando un total de $1,505 semanales.
 
 ### Combinado
 
@@ -432,3 +436,4 @@ co_p <- co |>
 ggplotly(co_p, dynamicTicks = TRUE)
 ```
 
+Por último esta predicción estima mi comportamiento de los gastos a futuro pero tomando en cuenta la tendencia de éstos, es decir, si vengo reduciendo los gastos o aumentándolos en comparación a semanas anteriores.
