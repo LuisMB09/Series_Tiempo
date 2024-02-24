@@ -295,11 +295,13 @@ datos_fc2 |>
 datos2 <- datos_fc2
 datos2 <- subset(datos2, .model != "combi_bc")
 datos2 <- subset(datos2, .model != "snaive_bc")
+datos2 <- subset(datos2, .model != "mean_bc")
 
 
 mod <- datos_fit2
 mod <- subset(mod, select = -snaive_bc)
 mod <- subset(mod, select = -combi_bc)
+mod <- subset(mod, select = -mean_bc)
 
 datos2 <- mod |> 
   forecast(h = "10 days")
@@ -364,7 +366,16 @@ datos |>
 ```{r}
 datos_fc2 |> 
   filter(.model == "snaive") |> 
-  autoplot()
+  autoplot() + xlab("Fecha") + ggtitle("Seasonal Naive")
+
+sna <- datos_fc2 |> 
+  filter(.model == 'snaive')
+sna <- as_tibble(sna)
+sna <- as_tsibble(sna, index = Date)
+sna_p <- sna |> 
+  select(c(Date, .mean)) |> 
+  autoplot(.mean) + ggtitle("Predicción Seasonla Naive") + xlab("Fecha")
+ggplotly(sna_p, dynamicTicks = TRUE)
 ```
 
 
