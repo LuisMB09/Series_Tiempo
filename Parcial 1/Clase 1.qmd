@@ -96,7 +96,6 @@ ggplotly(sd, dynamicTicks = TRUE) |>
   rangeslider()
 ```
 
-
 ```{r}
 #| warning: false
 stocks_data |> 

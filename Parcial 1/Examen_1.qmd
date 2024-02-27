@@ -1,0 +1,19 @@
+---
+title: "Examen 1"
+author: "Luis Márquez"
+format: html
+format:
+  html:
+    embed-resources: true
+    theme:
+      light: minty
+      dark: darkly
+toc: true
+df-print: paged
+---
+
+```{r}
+
+```
+
+
