@@ -1,7 +1,6 @@
 ---
 title: "Examen 1"
 author: "Luis Márquez"
-format: html
 format:
   html:
     embed-resources: true
@@ -13,7 +12,175 @@ df-print: paged
 ---
 
 ```{r}
+#| warning: false
+library(tidyverse)
+library(fpp3)
+library(plotly)
+const_mx <- as_tsibble(mutate(tidyquant::tq_get(x = "MEXPRCNTO01IXOBM", get = "economic.data", 
+    from = "1986-01-01", to = "2023-03-01"), date = yearmonth(date)), 
+    index = date, key = symbol)
+const_mx
+```
 
+# Construcción México
+
+```{r}
+const_mx
+const_mx |> 
+  autoplot(price)
+```
+
+# Transformación original
+
+```{r}
+lambda <- const_mx |> 
+  features(price, features = guerrero) |> 
+  pull(lambda_guerrero)
+lambda
+
+const_mx |> 
+  autoplot(box_cox(price, lambda))
+
+const_mx |> 
+  autoplot(price)
+```
+
+# Descomposición Original
+
+```{r}
+const_mx |> 
+  model(
+    stl = STL(box_cox(price, lambda), robust = TRUE)
+  ) |> components() |> 
+  autoplot()
 ```
 
 
+
+# Train/Test
+
+```{r}
+const_train <- const_mx |> 
+  filter_index(.~"2016 dec.")
+const_train
+```
+
+## Transformación
+
+```{r}
+lambda <- const_train |> 
+  features(price, features = guerrero) |> 
+  pull(lambda_guerrero)
+lambda
+
+const_train |> 
+  autoplot(box_cox(price, lambda))
+```
+
+## Descomposición
+
+```{r}
+const_train |> 
+  model(
+    stl = STL(box_cox(price, lambda), robust = TRUE)
+  ) |> components() |> 
+  autoplot()
+```
+
+
+## Estimación del modelo
+
+```{r}
+const_fit <- const_train |> 
+  model(
+    snaive_bc = SNAIVE(box_cox(price, lambda)),
+    snaive = SNAIVE(price),
+    combi_bc = decomposition_model(
+      STL(box_cox(price, lambda), robust = TRUE),
+      SNAIVE(season_year),
+      RW(season_adjust ~ drift())
+    ),
+    combi = decomposition_model(
+      STL(price, robust = TRUE),
+      SNAIVE(season_year),
+      RW(season_adjust ~ drift())
+    )
+  )
+const_fit
+```
+
+## Análisis de residuos
+
+```{r}
+#| warning: false
+const_fit |> 
+  select(snaive_bc) |> 
+  gg_tsresiduals()
+
+const_fit |> 
+  select(snaive) |> 
+  gg_tsresiduals()
+
+const_fit |> 
+  select(combi) |> 
+  gg_tsresiduals()
+
+const_fit |> 
+  select(combi_bc) |> 
+  gg_tsresiduals()
+
+const_fit |> 
+  augment() |> 
+  features(.innov, ljung_box, dof = 0, lag = 24)
+```
+
+Para los 4 modelos utilizados los residuos no muestran algún patrón de tendencia ni estacionalidad, y su varianza no es constante por lo que son ruido blanco (random), pero para ambos modelos de combinación los residuos se ven más random que para los modelos de snaive.
+
+Para el modelo de snaive tanto en la serie original como en la transformada, los residuos que se muestran están bastante autocorrelacionados y no cuentan con una distribución normal lo cual no es buena señal.
+
+Para el modelo combinado tanto en la serie original como en la transformada, los residuos muestran un poco de correlación, la cual es menor a la mostrada en el modelo snaive, y sus datos no son distribución normal pero se asemeja a la forma. Esto indica que pudieran ser un poco mejores los modelos combinados.
+
+Para los 4 modelos el p-value es prácticamente 0.
+
+```{r}
+accuracy(const_fit) |> 
+  arrange(MAPE)
+```
+
+En cuanto a su MAPE (error porcentual medio absoluto), el modelo combinado en la transformación y serie original es mejor teniendo un error ligeramente mayor al 3% en ambos casos.
+
+## Comparación
+
+```{r}
+const_fc <- const_fit |> 
+  forecast(h = "6 years")
+
+const_fc
+
+const_fc |> 
+  autoplot(const_mx |> filter_index("Jan. 2010" ~ .), level = NULL)
+```
+
+```{r}
+const_fc |> 
+  accuracy(const_mx) |> 
+  arrange(MAPE)
+```
+
+# Pronóstico
+
+```{r}
+const_mx |> 
+  model(
+    combi_bc = decomposition_model(
+      STL(box_cox(price, lambda), robust = TRUE),
+      SNAIVE(season_year),
+      RW(season_adjust ~ drift())
+    )
+  ) |> 
+  
+  forecast(h = "6 years") |> 
+  autoplot(const_mx)
+```
+
+Decidí utilizar el modelo combinado con la serie transformada a box-cox. Esto se debe a que en los datos de training tuvo el error porcentual más pequeño. Si bien en los datos de test tuvo un error mayor esto se debe a que toma la tendencia y como hubo una pandemia los datos reales bajaron bastante. Sin embargo, al momento de pronosticar a futuro, si tomará en cuenta los datos más actuales del bajón por la pandemia y de como se ha ido elevando la producción de la construcción a partir de 2020 la serie recupero su tendencia a la alza, por lo que usar el modelo combinado de box-cox obtendremos un buen pronóstico a futuro ya que seremos capaces de captar la tendencia a la alza actual.
