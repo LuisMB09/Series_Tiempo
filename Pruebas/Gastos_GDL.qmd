@@ -281,7 +281,7 @@ accuracy(datos_fit2) |>
 
 ```{r}
 datos_fc2 <- datos_fit2 |> 
-  forecast(h = "14 days")
+  forecast(h = "17 days")
 
 datos_fc2
 
@@ -304,7 +304,7 @@ mod <- subset(mod, select = -combi_bc)
 mod <- subset(mod, select = -mean_bc)
 
 datos2 <- mod |> 
-  forecast(h = "10 days")
+  forecast(h = "17 days")
 
 datos2
 
