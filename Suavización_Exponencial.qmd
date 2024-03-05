@@ -169,6 +169,13 @@ beer_fc |>
   autoplot(recent_production |> filter_index("2005 Q1" ~ .), level = NULL, size = 1)
 
 beer_fc |> 
+  autoplot(recent_production |> filter_index("2005 Q1" ~ .), size = 1) + facet_wrap(~ .model, ncol = 3) + theme(legend.position = NULL)
+
+beer_fc |> 
+  filter(.model != "stl_ets_M") |> 
+  autoplot(recent_production |> filter_index("2005 Q1" ~ .), size = 1) + facet_wrap(~ .model, ncol = 3) + theme(legend.position = NULL)
+
+beer_fc |> 
   accuracy(recent_production) |> 
   arrange(MAPE)
 ```
