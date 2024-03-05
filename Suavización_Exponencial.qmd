@@ -11,7 +11,6 @@ toc: true
 df-print: paged
 ---
 
-## pkgs
 
 ```{r}
 #| message: false
@@ -19,7 +18,7 @@ library(tidyverse)
 library(fpp3)
 ```
 
-## Ej: Producción de cerveza
+# Ej: Producción de cerveza
 
 Ya habíamos modelado la producción de cerveza utilizando los métodos de referencia:
 
@@ -135,9 +134,42 @@ accuracy(beer_fit) |>
   arrange(MAPE)
 ```
 
+## Análisis de residuos
+
 ```{r}
 beer_fit |> 
   augment() |> 
   features(.innov, ljung_box, lag = 8)
+```
+
+```{r}
+beer_fit |> 
+  select(stl_ets_A) |> 
+  gg_tsresiduals()
+
+beer_fit |> 
+  select(stl_ets_M) |> 
+  gg_tsresiduals()
+```
+
+## Pronósticos
+
+Se hace para 10 periodos (2 años y medio).
+
+```{r}
+beer_fc <- beer_fit |> 
+  forecast(h = "2 years 6 months")
+
+beer_fc
+
+beer_fc |> 
+  autoplot(recent_production, level = NULL)
+
+beer_fc |> 
+  autoplot(recent_production |> filter_index("2005 Q1" ~ .), level = NULL, size = 1)
+
+beer_fc |> 
+  accuracy(recent_production) |> 
+  arrange(MAPE)
 ```
 
