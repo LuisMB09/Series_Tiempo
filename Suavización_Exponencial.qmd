@@ -38,8 +38,6 @@ beer_fit <- beer_train %>%
 beer_fc <- beer_fit %>%
   forecast(h = 10)
 
-beer_train |> 
-  autoplot(Beer)
 
 beer_fc %>%
   autoplot(recent_production, level = NULL) +
@@ -82,9 +80,21 @@ beer_train |>
   autoplot(log(Beer))
 ```
 
-Normal
-
 ```{r}
+dcmp <- beer_train |> 
+  model(
+    STL(log(Beer), robust = TRUE)
+  ) 
+
+dcmp |> 
+  components() |> 
+  autoplot()
+
+dcmp |> 
+  components() |> 
+  ggplot(aes(x = Quarter, y = season_adjust)) +
+  geom_line()
+
 beer_train |> 
   model(
     STL(Beer, robust = TRUE)
@@ -93,32 +103,41 @@ beer_train |>
   autoplot()
 ```
 
-Con logaritmos
-
-```{r}
-beer_train |> 
-  model(
-    STL(log(Beer), robust = TRUE)
-  ) |> 
-  components() |> 
-  autoplot()
-```
-
 ## Ajuste de modelos
-
-
 
 ```{r}
 beer_fit <- beer_train |> 
   model(
     snaive = SNAIVE(Beer),
     ets_ANA = ETS(Beer ~ error("A") + trend("N") + season("A")),
-    ets_AAda = ETS(Beer ~ error("A") + trend("Ad") + season("A")),
+    ets_AAdA = ETS(Beer ~ error("A") + trend("Ad") + season("A")),
     ets_MAdM = ETS(Beer ~ error("M") + trend("Ad") + season("M")),
-    ets_ANA_l = ETS(log(Beer ~ error("A") + trend("N") + season("A"))),
-    ets_AAda_l = ETS(log(Beer ~ error("A") + trend("Ad") + season("A"))),
-    ets_MAdM_l = ETS(log(Beer ~ error("M") + trend("Ad") + season("M")))
-  )
+    ets_ANA_log = ETS(log(Beer) ~ error("A") + trend("N") + season("A")),
+    ets_AAdA_log = ETS(log(Beer) ~ error("A") + trend("Ad") + season("A")),
+    ets_MAdM_log = ETS(log(Beer) ~ error("M") + trend("Ad") + season("M")),
+    stl_ets_A = decomposition_model(
+      STL(log(Beer), robust = TRUE),
+      ETS(season_year ~ error('A') + trend('N')+ season('A')),
+      ETS(season_adjust~ error('A') + trend('Ad')+ season('N'))
+    ),
+    stl_ets_M = decomposition_model(
+      STL(log(Beer), robust = TRUE),
+      ETS(season_year ~ error('M') + trend('N')+ season('M')),
+      ETS(season_adjust~ error('A') + trend('Ad')+ season('N'))
+    )
+  )  
 
 beer_fit
 ```
+
+```{r}
+accuracy(beer_fit) |> 
+  arrange(MAPE)
+```
+
+```{r}
+beer_fit |> 
+  augment() |> 
+  features(.innov, ljung_box, lag = 8)
+```
+
