@@ -152,7 +152,7 @@ beer_fit |>
   gg_tsresiduals()
 ```
 
-## Pronósticos
+## Pronósticos para test
 
 Se hace para 10 periodos (2 años y medio).
 
@@ -178,5 +178,22 @@ beer_fc |>
 beer_fc |> 
   accuracy(recent_production) |> 
   arrange(MAPE)
+```
+
+## Pronóstico
+
+Se realiza un pronóstico a futuro con el mejor modelo.
+
+```{r}
+beer_fut <- recent_production |> 
+  model(
+    ets_MAdM = ETS(Beer ~ error("M") + trend("Ad") + season("M"))
+  ) |> 
+  forecast(h = "2 years 6 months")
+
+beer_fut
+
+beer_fut |> 
+  autoplot(recent_production)
 ```
 
