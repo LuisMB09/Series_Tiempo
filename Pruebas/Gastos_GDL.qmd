@@ -177,4 +177,7 @@ datos_fut |>
   autoplot(datos |>filter_index("2024-02-15" ~ .))
 ```
 
+```{r}
+datos_fut
+```
 
