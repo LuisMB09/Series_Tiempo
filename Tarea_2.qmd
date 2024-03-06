@@ -155,7 +155,7 @@ gas_fc |>
 
 gas_fc |> 
   filter(.model != "stl_ets_M") |> 
-  autoplot(recent_production |> filter_index("2005 Q1" ~ .)) + 
+  autoplot(gas |> filter_index("2005 Q1" ~ .)) + 
   facet_wrap(~ .model, ncol = 2) + theme(legend.position = NULL)
 
 gas_fc |> 
