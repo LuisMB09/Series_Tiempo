@@ -24,12 +24,14 @@ library(lubridate)
 ```
 
 ```{r}
-datos <- read_excel("Gasto.xlsx", sheet = 2)
+datos <- read_excel("Gasto.xlsx", sheet = 1)
 ```
 
 ```{r}
 datos$Date <- as.Date(datos$Date)
 ```
+
+# Gastos diarios
 
 ```{r}
 datos <- as_tsibble(datos, index = Date)
@@ -40,400 +42,139 @@ d <- datos |>
 ggplotly(d, dynamicTicks = TRUE)
 ```
 
-# Estimación de modelos
+## Modelos de referencia
 
 ```{r}
-datos_fit <- datos |> 
+datos_train <- datos |> filter_index(. ~ "2024-02-23")
+
+datos_fit <- datos_train |> 
   model(
-    media = MEAN(Expense),
-    naive = NAIVE(Expense),
+    mean = MEAN(Expense),
     snaive = SNAIVE(Expense),
+    naive = NAIVE(Expense),
     drift = RW(Expense ~ drift())
   )
-datos_fit
-```
-# Análisis de residuos
-
-```{r}
-datos_fit |> 
-  augment()
-
-datos_fit |> 
-  augment() |> 
-  features(.innov, ljung_box, lag = 10, dof = 0)
-```
-
-## Media
-
-```{r}
-#| warning: false
-datos_fit |> 
-  select(media) |> 
-  gg_tsresiduals()
-```
-
-## Naive
-
-```{r}
-#| warning: false
-datos_fit |> 
-  select(naive) |> 
-  gg_tsresiduals()
-```
-
-## Seasonal Naive
-
-```{r}
-#| warning: false
-datos_fit |> 
-  select(snaive) |> 
-  gg_tsresiduals()
-```
-
-## Drift
-
-```{r}
-#| warning: false
-datos_fit |> 
-  select(drift) |> 
-  gg_tsresiduals()
-```
-
-# Forecast
-
-```{r}
-#| warning: false
 
 datos_fc <- datos_fit |> 
-  forecast(h = "14 days")
-
-datos_fc
+  forecast(h = 12)
 
 datos_fc |> 
-  autoplot(datos) + 
-  facet_wrap(~.model) + 
-  theme(legend.position = "bottom")
-
+  autoplot(datos, level = NULL)
 ```
 
-Los mejores son media y snaive
-
 ```{r}
-datos_fc |> 
-  filter(.model == "media") |> 
-  autoplot()
-
-
-m <- datos_fc |> 
-  filter(.model == 'media')
-m <- as_tibble(m)
-m <- as_tsibble(m, index = Date)
-km <- m |> 
-  select(c(Date, .mean)) |> 
-  autoplot(.mean) + ggtitle("Predicción media") + ylab("Gasto $") + xlab("Fecha")
-ggplotly(km, dynamicTicks = TRUE)
+accuracy(datos_fit) |> 
+  arrange(MAE)
 ```
 
 ```{r}
 datos_fc |> 
-  filter(.model == "snaive") |> 
-  autoplot()
-
-
-sn <- datos_fc |> 
-  filter(.model == 'snaive')
-sn <- as_tibble(sn)
-sn <- as_tsibble(sn, index = Date)
-ksn <- sn |> 
-  select(c(Date, .mean)) |> 
-  autoplot(.mean) + ggtitle("Predicción seasonal naive") + ylab("Gasto $") + xlab("Fecha")
-ggplotly(ksn, dynamicTicks = TRUE)
+  accuracy(datos) |> 
+  arrange(MAE)
 ```
 
-# Análisis Mejorado
-
-```{r}
-datos
-```
-
-## Visualización
-
-```{r}
-datos |> 
-  autoplot(Expense) + xlab("Fecha") + ggtitle("Gastos diarios")
-```
-
-## Train/Test
-
-```{r}
-datos_train <- datos |> 
-  filter_index(.~"2024-02-13")
-datos_train
-```
-
-### Visualización
-
-```{r}
-datos_train |> 
-  autoplot(Expense) + xlab("Fecha") + ggtitle("Gastos diarios")
-```
-
-### Transformación
+## Transformación y descomposición de los datos
 
 ```{r}
 lambda <- datos_train |> 
   features(Expense, features = guerrero) |> 
   pull(lambda_guerrero)
-lambda
 
-datos_train |> 
-  autoplot(box_cox(Expense, lambda))
-```
-
-```{r}
-datos_train |> 
-  features(Expense, feat_stl)
-```
-
-### STL Descomposición
-
-```{r}
-datos_train |> 
+dcmp <- datos_train |> 
   model(
-    stl = STL(Expense, robust = TRUE)
-  ) |> components() |> 
+    STL(box_cox(Expense, lambda), robust = TRUE)
+  ) 
+
+dcmp |> 
+  components() |> 
   autoplot()
+
+dcmp |> 
+  components() |> 
+  ggplot(aes(x = Date, y = season_adjust)) +
+  geom_line()
 
 datos_train |> 
   model(
-    stl2 = STL(box_cox(Expense, lambda), robust = TRUE)
-  ) |> components() |> 
+    STL(Expense, robust = TRUE)
+  ) |> 
+  components() |> 
   autoplot()
 ```
 
-### Estimación de modelos
+## Ajuste de los modelos
 
 ```{r}
-datos_fit2 <- datos_train |> 
+datos_fit <- datos_train |> 
   model(
     mean = MEAN(Expense),
-    mean_bc = MEAN(box_cox(Expense, lambda)),
+    ets_AAA = ETS(Expense ~ error("A") + trend("A") + season("A")),
+    ets_MAM = ETS(Expense ~ error("M") + trend("A") + season("M")),
+    ets_AAdA = ETS(Expense ~ error("A") + trend("Ad") + season("A")),
+    ets_MAdM = ETS(Expense ~ error("M") + trend("Ad") + season("M")),
     
-    snaive = SNAIVE(Expense),
-    snaive_bc = SNAIVE(box_cox(Expense, lambda)),
-    
-    combi = decomposition_model(
+    stl_ets_A = decomposition_model(
       STL(Expense, robust = TRUE),
-      SNAIVE(season_week),
-      RW(season_adjust ~ drift())
-    ),
-    combi_bc = decomposition_model(
-      STL(box_cox(Expense, lambda), robust = TRUE),
-      SNAIVE(season_week),
-      RW(season_adjust ~ drift())
+      ETS(season_week ~ error('A') + trend('N')+ season('A')),
+      ETS(season_adjust~ error('A') + trend('Ad')+ season('N'))
     )
-    
   )
-datos_fit2
+datos_fit
 ```
 
-### Análisis de los residuos
+```{r}
+accuracy(datos_fit) |> 
+  arrange(MAE)
+```
+
+## Análisis de residuos
 
 ```{r}
-#| warning: false
-datos_fit2 |> 
-  select(mean) |> 
-  gg_tsresiduals()
-
-datos_fit2 |> 
-  select(mean_bc) |> 
-  gg_tsresiduals()
-
-datos_fit2 |> 
-  select(snaive) |> 
-  gg_tsresiduals()
-
-datos_fit2 |> 
-  select(snaive_bc) |> 
-  gg_tsresiduals()
-
-datos_fit2 |> 
-  select(combi) |> 
-  gg_tsresiduals()
-
-datos_fit2 |> 
-  select(combi_bc) |> 
-  gg_tsresiduals()
-
-datos_fit2 |> 
+datos_fit |> 
   augment() |> 
-  features(.innov, ljung_box, dof = 0, lag = 14)
+  features(.innov, ljung_box, lag = 8) |> 
+  arrange(lb_pvalue)
 ```
 
-### Análisis de error $E$
+## Pronóstico para test
 
 ```{r}
-accuracy(datos_fit2) |> 
-  arrange(RMSE)
-```
+datos_fc <- datos_fit |> 
+  forecast(h = 12)
 
-## Forecast
+datos_fc
 
-```{r}
-datos_fc2 <- datos_fit2 |> 
-  forecast(h = "17 days")
+datos_fc |> 
+  autoplot(datos, level = NULL)
 
-datos_fc2
+datos_fc |> 
+  autoplot(datos |> filter_index("2024-02-15" ~ .), level = NULL)
 
-datos_fc2 |> 
-  autoplot(datos, level = NULL) + xlab("Fecha") + ggtitle("Comparación de predicción")
-```
+datos_fc |> 
+  autoplot(datos |> filter_index("2024-02-15" ~ .)) + 
+  facet_wrap(~ .model, ncol = 3) + theme(legend.position = NULL)
 
-## Mejora de forecast
-
-```{r}
-datos2 <- datos_fc2
-datos2 <- subset(datos2, .model != "combi_bc")
-datos2 <- subset(datos2, .model != "snaive_bc")
-datos2 <- subset(datos2, .model != "mean_bc")
-
-
-mod <- datos_fit2
-mod <- subset(mod, select = -snaive_bc)
-mod <- subset(mod, select = -combi_bc)
-mod <- subset(mod, select = -mean_bc)
-
-datos2 <- mod |> 
-  forecast(h = "17 days")
-
-datos2
-
-datos2 |> 
-  autoplot(datos, level = NULL) + xlab("Fecha") + ggtitle("Comparación de predicción")
-
-```
-
-### Error de forecast
-
-```{r}
-datos2 |> 
+datos_fc |> 
   accuracy(datos) |> 
-  arrange(MAPE)
+  arrange(MAE)
 ```
 
-## Pronósticos
+## Pronóstico
 
 ```{r}
-datos |> 
+datos_fut <- datos |> 
   model(
-    snaive = SNAIVE(Expense)
-  ) |> 
-  
-  forecast(h = "14 days") |> 
-  autoplot(datos) + xlab("Fecha") + ggtitle("Seasonal Naive")
-
-datos |> 
-  model(
-    mean = MEAN(Expense)
-  ) |> 
-  
-  forecast(h = "14 days") |> 
-  autoplot(datos) + xlab("Fecha") + ggtitle("Mean")
-
-datos |> 
-  model(
-    combi = decomposition_model(
-      STL(Expense, robust = TRUE),
-      SNAIVE(season_week),
-      RW(season_adjust ~ drift())
-    )
-  ) |> 
-  
-  forecast(h = "14 days") |> 
-  autoplot(datos) + xlab("Fecha") + ggtitle("Combinado")
-```
-
-## Separación de pronósticos
-
-```{r}
-fsna <- datos |> 
-  model(
-    snaive = SNAIVE(Expense)
-  ) |> 
-  
-  forecast(h = "14 days")
-
-fmean <- datos |> 
-  model(
-    mean = MEAN(Expense)
+    ets_AAdA = ETS(Expense ~ error("A") + trend("Ad") + season("A"))
   ) |> 
   forecast(h = "14 days")
 
-fcombi <- datos |> 
-  model(
-    combi = decomposition_model(
-      STL(Expense, robust = TRUE),
-      SNAIVE(season_week),
-      RW(season_adjust ~ drift())
-    )
-  ) |> 
-  
-  forecast(h = "14 days")
+datos_fut
+
+datos_fut |> 
+  autoplot(datos)
+
+datos_fut |> 
+  autoplot(datos |>filter_index("2024-02-15" ~ .))
 ```
 
-### Seasonal Naive
 
-```{r}
-fsna |> 
-  filter(.model == "snaive") |> 
-  autoplot() + xlab("Fecha") + ggtitle("Predicción Seasonal Naive")
-
-sna <- fsna |> 
-  filter(.model == 'snaive')
-sna <- as_tibble(sna)
-sna <- as_tsibble(sna, index = Date)
-sna_p <- sna |> 
-  select(c(Date, .mean)) |> 
-  autoplot(.mean) + ggtitle("Predicción Seasonal Naive") + xlab("Fecha")
-ggplotly(sna_p, dynamicTicks = TRUE)
-```
-
-Esta predicción da un estimado del comportamiento de mis gastos a futuro, la cual muestra una consistencia en mi comportamiento de acuerdo al día de la semana. Hay picos altos en los fines de semana lo cual coincide con la realidad de gastar más en esos días, y baja entre semana diciendo lo que gastaré cada día, que es igual a lo que gasto en la comida.
-
-### Mean
-
-```{r}
-fmean |> 
-  filter(.model == "mean") |> 
-  autoplot() + xlab("Fecha") + ggtitle("Predicción Mean")
-
-me <- fmean |> 
-  filter(.model == 'mean')
-me <- as_tibble(me)
-me <- as_tsibble(me, index = Date)
-me_p <- me |> 
-  select(c(Date, .mean)) |> 
-  autoplot(.mean) + ggtitle("Predicción Mean") + xlab("Fecha")
-ggplotly(me_p, dynamicTicks = TRUE)
-```
-
-Esta predicción no estima mi comportamiento durante la semana pero es un buen pronóstico para saber cuanto necesitaría por semana que es 215 * 7, dando un total de $1,505 semanales.
-
-### Combinado
-
-```{r}
-fcombi |> 
-  filter(.model == "combi") |> 
-  autoplot() + xlab("Fecha") + ggtitle("Predicción Combinado")
-
-co <- fcombi |> 
-  filter(.model == 'combi')
-co <- as_tibble(co)
-co <- as_tsibble(co, index = Date)
-co_p <- co |> 
-  select(c(Date, .mean)) |> 
-  autoplot(.mean) + ggtitle("Predicción Combinado") + xlab("Fecha")
-ggplotly(co_p, dynamicTicks = TRUE)
-```
-
-Por último esta predicción estima mi comportamiento de los gastos a futuro pero tomando en cuenta la tendencia de éstos, es decir, si vengo reduciendo los gastos o aumentándolos en comparación a semanas anteriores.
