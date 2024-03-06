@@ -182,18 +182,76 @@ gas_fut |>
 
 ```{r}
 monaco <- global_economy |> 
-  filter(Country == "Monaco")
+  filter(Country=='Monaco') |> 
+  select(-c(Country, Code))
+monaco
+
 monaco |> 
   autoplot(Population)
-monaco |> 
-  autoplot(log(Population))
 
 lambda <- monaco |> 
   features(Population, features = guerrero) |> 
   pull(lambda_guerrero)
+```
+
+## Modelos de referencia
+
+```{r}
+monaco_train <- monaco |> filter_index(.~"2006")
+
+monaco_fit <- monaco_train |> 
+  model(
+    mean2 = MEAN(Population),
+    naive2 = NAIVE(Population),
+    drift2 = RW(Population ~ drift())
+  )
+
+monaco_fc <- monaco_fit |> 
+  forecast(h = 11)
+
+monaco_fc |> 
+  autoplot(monaco, level = NULL)
+```
+
+```{r}
+accuracy(monaco_fit) |> 
+  arrange(MAPE)
+```
+
+```{r}
+monaco_fc |> 
+  accuracy(monaco) |> 
+  arrange(MAPE)
+```
+
+
+## Transformación
+
+```{r}
+lambda <- monaco_train |> 
+  features(Population, features = guerrero) |> 
+  pull(lambda_guerrero)
 lambda
 
-monaco |> 
+monaco_train |> 
   autoplot(box_cox(Population, lambda))
 ```
+
+## Ajuste de los modelos
+
+```{r}
+monaco_fit <- monaco_train |> 
+  model(
+    drift2 = RW(Population ~ drift()),
+    ets_AAN = ETS(Population ~ error("A") + trend("A") + season("N")),
+    ets_MAN = ETS(Population ~ error("M") + trend("A") + season("N")),
+    ets_AAdN = ETS(Population ~ error("A") + trend("Ad") + season("N")),
+    ets_MAdN = ETS(Population ~ error("M") + trend("Ad") + season("N")),
+  )
+monaco_fit
+```
+
+
+
+
 
