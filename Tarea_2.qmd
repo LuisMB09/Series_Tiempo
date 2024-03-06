@@ -167,3 +167,18 @@ gas_fc |>
   arrange(MAPE)
 ```
 
+## Pronóstico
+
+```{r}
+gas_fut <- gas |> 
+  model(
+    ets_AAdA = ETS(Gas ~ error("A") + trend("Ad") + season("A"))
+  ) |> 
+  forecast(h = "2 years 6 months")
+
+gas_fut
+
+gas_fut |> 
+  autoplot(gas)
+```
+
