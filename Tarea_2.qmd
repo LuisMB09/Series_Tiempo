@@ -1,0 +1,169 @@
+---
+title: "Tarea_2"
+author: "Luis Márquez y Ivanna Herrera"
+format:
+  html:
+    embed-resources: true
+    theme:
+      light: minty
+      dark: darkly
+toc: true
+df-print: paged
+---
+
+```{r}
+#| message: false
+library(tidyverse)
+library(fpp3)
+#monaco <- global_economy |> 
+#  filter(Country == "Monaco")
+#monaco |> 
+#  autoplot(Population)
+```
+
+# Tarea
+
+Seleccionar dos series de tiempo vistas en clase y realizar lo siguiente:
+De preferencia, que una serie de tiempo tenga un patrón estacional y la otra sin estacionalidad.
+  Seleccionar el método de referencia que mejores resultados haya dado para cada       serie.
+  Modelar cada serie de tiempo mediante suavización exponencial. Pueden utilizar dos   o tres variantes del modelo, según sea el caso.
+  Llevar a cabo el proceso completo de pronóstico.
+  Analizar si los modelos de suavización exponencial superan a los métodos de          referencia.
+    En caso de que el método de referencia sea mejor, intenten cambiar las               características de la suavización exponencial, logrando un mejor pronóstico.
+Si requieren realizar alguna transformación matemática a los datos para estabilizar la varianza, adelante.
+Se puede realizar la descomposición de la serie en estacionalidad y serie desestacionalizada para intentar obtener mejores pronósticos.
+
+# Primer serie de tiempo
+
+```{r}
+gas <- aus_production
+gas
+gas |> 
+  autoplot(Gas)
+```
+
+## Modelos de referencia
+
+```{r}
+gas <- aus_production |>  filter(year(Quarter) >= 1990)
+gas_train <- gas |>  filter(year(Quarter) <= 2007)
+
+gas_fit <- gas_train |> 
+  model(
+    mean = MEAN(Gas),
+    naive = NAIVE(Gas),
+    snaive = SNAIVE(Gas),
+    drift = RW(Gas ~ drift())
+  )
+
+gas_fc <- gas_fit |> 
+  forecast(h = 10)
+
+gas_fc |> 
+  autoplot(gas, level = NULL)
+```
+
+```{r}
+accuracy(gas_fit) |> 
+  arrange(MAPE)
+```
+
+```{r}
+gas_fc |> 
+  accuracy(gas) |> 
+  arrange(MAPE)
+```
+
+EL mejor modelo de los base fue el SNAIVE.
+
+## Descomposición de los datos de training
+
+```{r}
+dcmp <- gas_train |> 
+  model(
+    STL(log(Gas), robust = TRUE)
+  ) 
+
+dcmp |> 
+  components() |> 
+  autoplot()
+
+dcmp |> 
+  components() |> 
+  ggplot(aes(x = Quarter, y = season_adjust)) +
+  geom_line()
+
+gas_train |> 
+  model(
+    STL(Gas, robust = TRUE)
+  ) |> 
+  components() |> 
+  autoplot()
+```
+
+## Ajuste de los modelos
+
+```{r}
+gas_fit <- gas_train |> 
+  model(
+    snaive = SNAIVE(Gas),
+    ets_AAA = ETS(Gas ~ error("A") + trend("A") + season("A")),
+    ets_MAM = ETS(Gas ~ error("M") + trend("A") + season("M")),
+    ets_AAdA = ETS(Gas ~ error("A") + trend("Ad") + season("A")),
+    ets_MAdM = ETS(Gas ~ error("M") + trend("Ad") + season("M")),
+    ets_AAA_l = ETS(log(Gas) ~ error("A") + trend("A") + season("A")),
+    ets_MAM_l = ETS(log(Gas) ~ error("M") + trend("A") + season("M")),
+    ets_AAdA_l = ETS(log(Gas) ~ error("A") + trend("Ad") + season("A")),
+    ets_MAdM_l = ETS(log(Gas) ~ error("M") + trend("Ad") + season("M")),
+    stl_ets_A = decomposition_model(
+      STL(log(Gas), robust = TRUE),
+      ETS(season_year ~ error('A') + trend('N')+ season('A')),
+      ETS(season_adjust~ error('A') + trend('A')+ season('N'))
+    ),
+    stl_ets_M = decomposition_model(
+      STL(log(Gas), robust = TRUE),
+      ETS(season_year ~ error('M') + trend('N')+ season('M')),
+      ETS(season_adjust~ error('A') + trend('A')+ season('N'))
+    )
+  )
+gas_fit
+```
+
+```{r}
+accuracy(gas_fit) |> 
+  arrange(MAPE)
+```
+
+## Análisis de residuos
+
+```{r}
+gas_fit |> 
+  augment() |> 
+  features(.innov, ljung_box, lag = 8)
+```
+
+## Pronóstico para test
+
+```{r}
+gas_fc <- gas_fit |> 
+  forecast(h = "2 years 6 months")
+
+gas_fc
+
+gas_fc |> 
+  autoplot(gas, level = NULL)
+
+gas_fc |> 
+  filter(.model != "stl_ets_M") |> 
+  autoplot(gas, level = NULL)
+
+gas_fc |> 
+  filter(.model != "stl_ets_M") |> 
+  autoplot(recent_production |> filter_index("2005 Q1" ~ .)) + 
+  facet_wrap(~ .model, ncol = 2) + theme(legend.position = NULL)
+
+gas_fc |> 
+  accuracy(gas) |> 
+  arrange(MAPE)
+```
+
