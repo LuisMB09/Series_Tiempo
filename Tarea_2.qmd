@@ -15,10 +15,6 @@ df-print: paged
 #| message: false
 library(tidyverse)
 library(fpp3)
-#monaco <- global_economy |> 
-#  filter(Country == "Monaco")
-#monaco |> 
-#  autoplot(Population)
 ```
 
 # Tarea
@@ -180,5 +176,24 @@ gas_fut
 
 gas_fut |> 
   autoplot(gas)
+```
+
+# Segunda serie de tiempo
+
+```{r}
+monaco <- global_economy |> 
+  filter(Country == "Monaco")
+monaco |> 
+  autoplot(Population)
+monaco |> 
+  autoplot(log(Population))
+
+lambda <- monaco |> 
+  features(Population, features = guerrero) |> 
+  pull(lambda_guerrero)
+lambda
+
+monaco |> 
+  autoplot(box_cox(Population, lambda))
 ```
 
