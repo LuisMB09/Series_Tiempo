@@ -247,11 +247,66 @@ monaco_fit <- monaco_train |>
     ets_MAN = ETS(Population ~ error("M") + trend("A") + season("N")),
     ets_AAdN = ETS(Population ~ error("A") + trend("Ad") + season("N")),
     ets_MAdN = ETS(Population ~ error("M") + trend("Ad") + season("N")),
+    
+    ets_AAN_bc = ETS(box_cox(Population, lambda) ~ error("A") + trend("A") + season("N")),
+    ets_MAN_bc = ETS(box_cox(Population, lambda) ~ error("M") + trend("A") + season("N")),
+    ets_AAdN_bc = ETS(box_cox(Population, lambda) ~ error("A") + trend("Ad") + season("N")),
+    ets_MAdN_bc = ETS(box_cox(Population, lambda) ~ error("M") + trend("Ad") + season("N")),
   )
 monaco_fit
 ```
 
+```{r}
+accuracy(monaco_fit) |> 
+  arrange(MAPE)
+```
 
+## Análisis de residuos
 
+```{r}
+monaco_fit |> 
+  augment() |> 
+  features(.innov, ljung_box, lag = 12)
+```
 
+## Pronóstico para test
 
+```{r}
+monaco_fc <- monaco_fit |> 
+  forecast(h = "11 years")
+
+monaco_fc
+
+monaco_fc |> 
+  autoplot(monaco, level = NULL)
+
+monaco_fc |> 
+  autoplot(monaco |> filter_index("2005" ~ .), level = NULL) + 
+  theme(legend.position = NULL)
+
+monaco_fc |> 
+  autoplot(monaco |> filter_index("2005" ~ .)) + 
+  facet_wrap(~ .model, ncol = 3) + theme(legend.position = NULL)
+
+monaco_fc |> 
+  accuracy(monaco) |> 
+  arrange(MAPE)
+```
+
+## Pronóstico
+
+```{r}
+monaco_fut <- monaco |> 
+  model(
+    ets_MAdN = ETS(Population ~ error("M") + trend("Ad") + season("N"))
+  ) |> 
+  forecast(h = "5 years")
+
+monaco_fut
+
+monaco_fut |> 
+  autoplot(monaco)
+
+monaco_fut |> 
+  autoplot(monaco |>filter_index("2005" ~ .))
+```
