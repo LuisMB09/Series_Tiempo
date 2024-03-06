@@ -152,7 +152,7 @@ datos_fc |>
 
 datos_fc |> 
   autoplot(datos |> filter_index("2024-02-15" ~ .)) + 
-  facet_wrap(~ .model, ncol = 3) + theme(legend.position = NULL)
+  facet_wrap(~ .model, ncol = 3) + theme(legend.position = "bottom")
 
 datos_fc |> 
   accuracy(datos) |> 
@@ -168,16 +168,38 @@ datos_fut <- datos |>
   ) |> 
   forecast(h = "14 days")
 
+datos_fut2 <- datos |> 
+  model(
+    mean = MEAN(Expense)
+  ) |> 
+  forecast(h = "14 days")
+
+datos_fut2
+datos_fut2 |> 
+  autoplot(datos |>filter_index("2024-02-15" ~ .)) + ggtitle("Mean")
+
 datos_fut
-
 datos_fut |> 
-  autoplot(datos)
-
-datos_fut |> 
-  autoplot(datos |>filter_index("2024-02-15" ~ .))
+  autoplot(datos |>filter_index("2024-02-15" ~ .)) + ggtitle("ETS")
 ```
 
 ```{r}
-datos_fut
+m2 <- datos_fut2 |> 
+  filter(.model == 'mean')
+m2 <- as_tibble(m2)
+m2 <- as_tsibble(m2, index = Date)
+km2 <- m2 |> 
+  select(c(Date, .mean)) |> 
+  autoplot(.mean) + ggtitle("Mean") + ylab("Gasto $") + xlab("Fecha")
+ggplotly(km2, dynamicTicks = TRUE)
+
+m <- datos_fut |> 
+  filter(.model == 'ets_AAdA')
+m <- as_tibble(m)
+m <- as_tsibble(m, index = Date)
+km <- m |> 
+  select(c(Date, .mean)) |> 
+  autoplot(.mean) + ggtitle("Pronóstico ETS") + ylab("Gasto $") + xlab("Fecha")
+ggplotly(km, dynamicTicks = TRUE)
 ```
 
