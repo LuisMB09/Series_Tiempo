@@ -1,6 +1,6 @@
 ---
 title: "Tarea 2"
-author: "Luis Márquez y Ivanna Herrera"
+author: "Luis Márquez e Ivanna Herrera"
 format:
   html:
     embed-resources: true
