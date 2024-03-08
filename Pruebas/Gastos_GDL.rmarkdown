@@ -1,0 +1,219 @@
+---
+title: "Gastos"
+author: "Luis Márquez"
+format:
+  html:
+    embed-resources: true
+    theme:
+      light: minty
+      dark: darkly
+toc: true
+df-print: paged
+---
+
+```{r}
+#| warning: false
+library(tidyverse)
+library(fpp3)
+library(plotly)
+library(readxl)
+library(tsibble)
+library(tibble)
+library(zoo)
+library(lubridate)
+```
+
+```{r}
+datos <- read_excel("Gasto.xlsx", sheet = 1)
+```
+
+```{r}
+datos$Date <- as.Date(datos$Date)
+```
+
+
+# Gastos diarios
+
+
+```{r}
+datos <- as_tsibble(datos, index = Date)
+datos
+
+d <- datos |> 
+  autoplot(Expense)
+ggplotly(d, dynamicTicks = TRUE)
+```
+
+
+## Modelos de referencia
+
+
+```{r}
+datos_train <- datos |> filter_index(. ~ "2024-02-23")
+
+datos_fit <- datos_train |> 
+  model(
+    mean = MEAN(Expense),
+    snaive = SNAIVE(Expense),
+    naive = NAIVE(Expense),
+    drift = RW(Expense ~ drift())
+  )
+
+datos_fc <- datos_fit |> 
+  forecast(h = 12)
+
+datos_fc |> 
+  autoplot(datos, level = NULL)
+```
+
+```{r}
+accuracy(datos_fit) |> 
+  arrange(MAE)
+```
+
+```{r}
+datos_fc |> 
+  accuracy(datos) |> 
+  arrange(MAE)
+```
+
+
+## Transformación y descomposición de los datos
+
+
+```{r}
+lambda <- datos_train |> 
+  features(Expense, features = guerrero) |> 
+  pull(lambda_guerrero)
+
+dcmp <- datos_train |> 
+  model(
+    STL(box_cox(Expense, lambda), robust = TRUE)
+  ) 
+
+dcmp |> 
+  components() |> 
+  autoplot()
+
+dcmp |> 
+  components() |> 
+  ggplot(aes(x = Date, y = season_adjust)) +
+  geom_line()
+
+datos_train |> 
+  model(
+    STL(Expense, robust = TRUE)
+  ) |> 
+  components() |> 
+  autoplot()
+```
+
+
+## Ajuste de los modelos
+
+
+```{r}
+datos_fit <- datos_train |> 
+  model(
+    mean = MEAN(Expense),
+    ets_AAA = ETS(Expense ~ error("A") + trend("A") + season("A")),
+    ets_MAM = ETS(Expense ~ error("M") + trend("A") + season("M")),
+    ets_AAdA = ETS(Expense ~ error("A") + trend("Ad") + season("A")),
+    ets_MAdM = ETS(Expense ~ error("M") + trend("Ad") + season("M")),
+    
+    stl_ets_A = decomposition_model(
+      STL(Expense, robust = TRUE),
+      ETS(season_week ~ error('A') + trend('N')+ season('A')),
+      ETS(season_adjust~ error('A') + trend('Ad')+ season('N'))
+    )
+  )
+datos_fit
+```
+
+```{r}
+accuracy(datos_fit) |> 
+  arrange(MAE)
+```
+
+
+## Análisis de residuos
+
+
+```{r}
+datos_fit |> 
+  augment() |> 
+  features(.innov, ljung_box, lag = 8) |> 
+  arrange(lb_pvalue)
+```
+
+
+## Pronóstico para test
+
+
+```{r}
+datos_fc <- datos_fit |> 
+  forecast(h = 12)
+
+datos_fc
+
+datos_fc |> 
+  autoplot(datos, level = NULL)
+
+datos_fc |> 
+  autoplot(datos |> filter_index("2024-02-15" ~ .), level = NULL)
+
+datos_fc |> 
+  autoplot(datos |> filter_index("2024-02-15" ~ .)) + 
+  facet_wrap(~ .model, ncol = 3) + theme(legend.position = "bottom")
+
+datos_fc |> 
+  accuracy(datos) |> 
+  arrange(MAE)
+```
+
+
+## Pronóstico
+
+
+```{r}
+datos_fut <- datos |> 
+  model(
+    ets_AAdA = ETS(Expense ~ error("A") + trend("Ad") + season("A"))
+  ) |> 
+  forecast(h = "14 days")
+
+datos_fut2 <- datos |> 
+  model(
+    mean = MEAN(Expense)
+  ) |> 
+  forecast(h = "14 days")
+
+datos_fut2
+datos_fut2 |> 
+  autoplot(datos |>filter_index("2024-02-15" ~ .)) + ggtitle("Mean")
+
+datos_fut
+datos_fut |> 
+  autoplot(datos |>filter_index("2024-02-15" ~ .)) + ggtitle("ETS")
+```
+
+```{r}
+m2 <- datos_fut2 |> 
+  filter(.model == 'mean')
+m2 <- as_tibble(m2)
+m2 <- as_tsibble(m2, index = Date)
+km2 <- m2 |> 
+  select(c(Date, .mean)) |> 
+  autoplot(.mean) + ggtitle("Mean") + ylab("Gasto $") + xlab("Fecha")
+ggplotly(km2, dynamicTicks = TRUE)
+
+m <- datos_fut |> 
+  filter(.model == 'ets_AAdA')
+m <- as_tibble(m)
+m <- as_tsibble(m, index = Date)
+km <- m |> 
+  select(c(Date, .mean)) |> 
+  autoplot(.mean) + ggtitle("Pronóstico ETS") + ylab("Gasto $") + xlab("Fecha")
+ggplotly(km, dynamicTicks = TRUE)
+```
+

@@ -1,0 +1,214 @@
+---
+title: "Suavización Exponencial"
+author: "Luis Márquez"
+format:
+  html:
+    embed-resources: true
+    theme:
+      light: minty
+      dark: darkly
+toc: true
+df-print: paged
+---
+
+```{r}
+#| message: false
+library(tidyverse)
+library(fpp3)
+```
+
+
+# Ej: Producción de cerveza
+
+Ya habíamos modelado la producción de cerveza utilizando los métodos de referencia:
+
+
+```{r}
+recent_production <- aus_production %>% filter(year(Quarter) >= 1992)
+beer_train <- recent_production %>% filter(year(Quarter) <= 2007)
+
+beer_fit <- beer_train %>%
+  model(
+    Mean = MEAN(Beer),
+    `Naïve` = NAIVE(Beer),
+    `Seasonal naïve` = SNAIVE(Beer),
+    Drift = RW(Beer ~ drift())
+  )
+
+beer_fc <- beer_fit %>%
+  forecast(h = 10)
+
+
+beer_fc %>%
+  autoplot(recent_production, level = NULL) +
+  xlab("Year") + ylab("Megalitres") +
+  ggtitle("Forecasts for quarterly beer production") +
+  guides(colour=guide_legend(title="Forecast"))
+```
+
+
+Calculando las métricas de error en el **entrenamiento**:
+
+
+```{r}
+beer_accu_train <- accuracy(beer_fit) |> 
+  arrange(MAE)
+beer_accu_train
+```
+
+
+Nos dice que el modelo que mejor se ajusta en el entrenamiento, de acuerdo al **MAE** es **`r .QuartoInlineRender(beer_accu_train |> select(.model) |> slice(1) |> pull())`**.
+
+Calculamos las métricas de **error de pronóstico**:
+
+
+```{r}
+beer_accu_fc <- beer_fc |> 
+  accuracy(recent_production) |> 
+  arrange(MAE)
+
+beer_accu_fc
+```
+
+
+Esto nos indica que el modelo que tiene un menor **MAE** en el pronóstico es **`r .QuartoInlineRender(beer_accu_fc |> select(.model) |> slice(1) |> pull())`**.
+
+## Visualización
+
+Graficamos los datos de entrenamiento en niveles y en logaritmos:
+
+
+```{r}
+beer_train |> 
+  autoplot(Beer)
+
+beer_train |> 
+  autoplot(log(Beer))
+```
+
+```{r}
+dcmp <- beer_train |> 
+  model(
+    STL(log(Beer), robust = TRUE)
+  ) 
+
+dcmp |> 
+  components() |> 
+  autoplot()
+
+dcmp |> 
+  components() |> 
+  ggplot(aes(x = Quarter, y = season_adjust)) +
+  geom_line()
+
+beer_train |> 
+  model(
+    STL(Beer, robust = TRUE)
+  ) |> 
+  components() |> 
+  autoplot()
+```
+
+
+## Ajuste de modelos
+
+
+```{r}
+beer_fit <- beer_train |> 
+  model(
+    snaive = SNAIVE(Beer),
+    ets_ANA = ETS(Beer ~ error("A") + trend("N") + season("A")),
+    ets_AAdA = ETS(Beer ~ error("A") + trend("Ad") + season("A")),
+    ets_MAdM = ETS(Beer ~ error("M") + trend("Ad") + season("M")),
+    ets_ANA_log = ETS(log(Beer) ~ error("A") + trend("N") + season("A")),
+    ets_AAdA_log = ETS(log(Beer) ~ error("A") + trend("Ad") + season("A")),
+    ets_MAdM_log = ETS(log(Beer) ~ error("M") + trend("Ad") + season("M")),
+    stl_ets_A = decomposition_model(
+      STL(log(Beer), robust = TRUE),
+      ETS(season_year ~ error('A') + trend('N')+ season('A')),
+      ETS(season_adjust~ error('A') + trend('Ad')+ season('N'))
+    ),
+    stl_ets_M = decomposition_model(
+      STL(log(Beer), robust = TRUE),
+      ETS(season_year ~ error('M') + trend('N')+ season('M')),
+      ETS(season_adjust~ error('A') + trend('Ad')+ season('N'))
+    )
+  )  
+
+beer_fit
+```
+
+```{r}
+accuracy(beer_fit) |> 
+  arrange(MAPE)
+```
+
+
+## Análisis de residuos
+
+
+```{r}
+beer_fit |> 
+  augment() |> 
+  features(.innov, ljung_box, lag = 8)
+```
+
+```{r}
+beer_fit |> 
+  select(stl_ets_A) |> 
+  gg_tsresiduals()
+
+beer_fit |> 
+  select(stl_ets_M) |> 
+  gg_tsresiduals()
+```
+
+
+## Pronósticos para test
+
+Se hace para 10 periodos (2 años y medio).
+
+
+```{r}
+beer_fc <- beer_fit |> 
+  forecast(h = "2 years 6 months")
+
+beer_fc
+
+beer_fc |> 
+  autoplot(recent_production, level = NULL)
+
+beer_fc |> 
+  autoplot(recent_production |> filter_index("2005 Q1" ~ .), level = NULL, size = 1)
+
+beer_fc |> 
+  autoplot(recent_production |> filter_index("2005 Q1" ~ .), size = 1) + facet_wrap(~ .model, ncol = 3) + theme(legend.position = NULL)
+
+beer_fc |> 
+  filter(.model != "stl_ets_M") |> 
+  autoplot(recent_production |> filter_index("2005 Q1" ~ .), size = 1) + facet_wrap(~ .model, ncol = 3) + theme(legend.position = NULL)
+
+beer_fc |> 
+  accuracy(recent_production) |> 
+  arrange(MAPE)
+```
+
+
+## Pronóstico
+
+Se realiza un pronóstico a futuro con el mejor modelo.
+
+
+```{r}
+beer_fut <- recent_production |> 
+  model(
+    ets_MAdM = ETS(Beer ~ error("M") + trend("Ad") + season("M"))
+  ) |> 
+  forecast(h = "2 years 6 months")
+
+beer_fut
+
+beer_fut |> 
+  autoplot(recent_production)
+```
+
