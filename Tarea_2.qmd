@@ -183,8 +183,12 @@ gas_fut <- gas |>
 gas_fut
 
 gas_fut |> 
-  autoplot(gas)
+  autoplot(gas) + ggtitle("Producción de gas en Australia")
 ```
+
+Para esta serie de tiempo sobre la producción de gas en Australia, los métodos de suavización expoenencial fueron mejores que los de referencia.
+
+El mejor método de referencia fue el seasonal naive el cual en el test tuvo MAPE (error porcentual) de 2.94% y el mejor método de suavización exponencial tuvo un error de 1.21%. Este método considero error y estacionalidad aditiva y una tendencia amortiguada.
 
 # Segunda serie de tiempo
 
@@ -313,8 +317,15 @@ monaco_fut <- monaco |>
 monaco_fut
 
 monaco_fut |> 
-  autoplot(monaco)
+  autoplot(monaco) + ggtitle("Población de Monaco")
 
 monaco_fut |> 
-  autoplot(monaco |>filter_index("2005" ~ .))
+  autoplot(monaco |>filter_index("2005" ~ .)) + ggtitle("Población de Monaco")
+
 ```
+
+Para esta serie de tiempo sobre la población de Monaco, los métodos de suavización exponencial también fueron mejores que los de referencia.
+
+El mejor método de referencia fue el drift el cual en el test tuvo MAPE (error porcentual) de 3.82%. En cuanto a los métodos de suavización exponencial se escogió el tercero mejor ya que los dos mejores rechazaron la hipótesis nula, lo que significa que podrían tener error.
+
+El método de suavización elegido tuvo un error de 1.36%. Este método considero un error multiplicativo, una tendencia amortiguada y sin estacionalidad.
