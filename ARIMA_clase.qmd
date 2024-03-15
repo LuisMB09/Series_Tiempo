@@ -89,7 +89,7 @@ us_change_fit <- us_change |>
 us_change_fit
 ```
 
-Reportes de algunis modelos
+Reportes de algunos modelos
 
 ```{r}
 us_change_fit |> 
