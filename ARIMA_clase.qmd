@@ -89,6 +89,8 @@ us_change_fit <- us_change |>
 us_change_fit
 ```
 
+Reportes de algunis modelos
+
 ```{r}
 us_change_fit |> 
   select(arima_303) |> 
