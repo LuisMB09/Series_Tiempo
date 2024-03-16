@@ -203,3 +203,101 @@ km <- m |>
 ggplotly(km, dynamicTicks = TRUE)
 ```
 
+# Modelo ARIMA
+
+## Prueba de diferenciación
+
+```{r}
+datos_train |> 
+  features(Expense, unitroot_ndiffs)
+```
+
+## Análisis de grados
+
+```{r}
+datos_train |> 
+  gg_tsdisplay(Expense, plot_type = "partial")
+```
+
+## Ajuste de los modelos
+
+```{r}
+datos_fit2 <- datos_train |> 
+  model(
+    arima_000 = ARIMA(Expense ~ pdq(0,0,0) + PDQ(0,0,0)),
+    arima_100 = ARIMA(Expense ~ pdq(1,0,0) + PDQ(0,0,0)),
+    arima_001 = ARIMA(Expense ~ pdq(0,0,1) + PDQ(0,0,0)),
+  )
+
+datos_fit2
+```
+
+```{r}
+datos_fit2 |> 
+  glance() |> 
+  arrange(AICc)
+```
+
+```{r}
+accuracy(datos_fit2) |> 
+  arrange(MAE)
+```
+
+## Análisis de residuos
+
+```{r}
+datos_fit2 |> 
+  select(arima_000) |> 
+  gg_tsresiduals()
+
+datos_fit2 |> 
+  select(arima_001) |> 
+  gg_tsresiduals()
+```
+
+```{r}
+datos_fit2 |> 
+  augment() |> 
+  features(.innov, ljung_box, lag = 10) |> 
+  mutate(residuos_autocorrelacionados = if_else(lb_pvalue >=0.05, "No autocorrelación", "Autocorrelacionados"))
+```
+
+## Pronóstico para test
+
+```{r}
+datos_fc2 <- datos_fit2 |> 
+  forecast(h = 12)
+
+datos_fc2
+
+datos_fc2 |> 
+  autoplot(datos, level = NULL)
+
+datos_fc2 |> 
+  autoplot(datos |> filter_index("2024-02-15" ~ .), level = NULL)
+
+datos_fc2 |> 
+  autoplot(datos |> filter_index("2024-02-15" ~ .)) + 
+  facet_wrap(~ .model, ncol = 3) + theme(legend.position = "bottom")
+
+datos_fc2 |> 
+  accuracy(datos) |> 
+  arrange(MAE)
+```
+
+## Pronóstico
+
+```{r}
+datos_fut3 <- datos |> 
+  model(
+    arima_001 = ARIMA(Expense ~ pdq(0,0,1) + PDQ(0,0,0))
+  ) |> 
+  forecast(h = "14 days")
+
+
+datos_fut3
+datos_fut3 |> 
+  autoplot(datos |>filter_index("2024-02-15" ~ .)) + ggtitle("Arima 001")
+```
+
+
