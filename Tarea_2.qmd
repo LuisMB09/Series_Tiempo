@@ -329,3 +329,125 @@ Para esta serie de tiempo sobre la población de Monaco, los métodos de suaviza
 El mejor método de referencia fue el drift el cual en el test tuvo MAPE (error porcentual) de 3.82%. En cuanto a los métodos de suavización exponencial se escogió el tercero mejor ya que los dos mejores rechazaron la hipótesis nula, lo que significa que podrían tener error.
 
 El método de suavización elegido tuvo un error de 1.36%. Este método considero un error multiplicativo, una tendencia amortiguada y sin estacionalidad.
+
+# Modelo ARIMA (Segunda serie de tiempo)
+
+```{r}
+monaco_train |> 
+  autoplot(Population)
+```
+
+## Prueba de diferenciación
+
+```{r}
+monaco_train |> 
+  features(Population, unitroot_ndiffs)
+```
+
+## Diferenciación
+
+```{r}
+monaco_train2 <- monaco_train |> 
+  mutate(
+    "pop_diff" = difference(Population, 1)
+  )
+monaco_train2 |> 
+  autoplot(pop_diff)
+```
+
+## Análisis de grados
+
+```{r}
+monaco_train2 |> 
+  gg_tsdisplay(pop_diff, plot_type = "partial")
+```
+
+Los grados de acuerdo al análisis de la autocorrelación y autocorrelación parcial son $p = 2$, $d = 1$ y $q = 3$
+
+## Ajuste de los modelos
+
+```{r}
+monaco_fit2 <- monaco_train2 |> 
+  model(
+    arima_213 = ARIMA(Population ~ pdq(2,1,3) + PDQ(0,0,0) + 1),
+    arima_113 = ARIMA(Population ~ pdq(1,1,3) + PDQ(0,0,0) + 1),
+    arima_110 = ARIMA(Population ~ pdq(1,1,0) + PDQ(0,0,0)),
+    arima_011 = ARIMA(Population ~ pdq(0,1,1) + PDQ(0,0,0) + 1),
+  )
+
+monaco_fit2
+```
+
+```{r}
+monaco_fit2 |> 
+  glance() |> 
+  arrange(AICc)
+```
+
+```{r}
+accuracy(monaco_fit2) |> 
+  arrange(MAPE)
+```
+
+## Análisis de residuos
+
+```{r}
+monaco_fit2 |> 
+  select(arima_213) |> 
+  gg_tsresiduals()
+
+monaco_fit2 |> 
+  select(arima_113) |> 
+  gg_tsresiduals()
+```
+
+```{r}
+monaco_fit2 |> 
+  augment() |> 
+  features(.innov, ljung_box, lag = 10) |> 
+  mutate(residuos_autocorrelacionados = if_else(lb_pvalue >=0.05, "No autocorrelación", "Autocorrelacionados"))
+```
+
+## Pronóstico para test
+
+```{r}
+monaco_fc2 <- monaco_fit2 |> 
+  forecast(h = "11 years")
+
+monaco_fc2
+
+monaco_fc2 |> 
+  autoplot(monaco, level = NULL)
+
+monaco_fc2 |> 
+  autoplot(monaco |> filter_index("2005" ~ .), level = NULL) + 
+  theme(legend.position = NULL)
+
+monaco_fc2 |> 
+  autoplot(monaco |> filter_index("2005" ~ .)) + 
+  facet_wrap(~ .model, ncol = 3) + theme(legend.position = NULL)
+
+monaco_fc2 |> 
+  accuracy(monaco) |> 
+  arrange(MAPE)
+```
+
+
+## Pronóstico
+
+```{r}
+monaco_fut2 <- monaco |> 
+  model(
+    arima_213 = ARIMA(Population ~ pdq(2,1,3) + PDQ(0,0,0) + 1)
+  ) |> 
+  forecast(h = "5 years")
+
+monaco_fut2
+
+monaco_fut2 |> 
+  autoplot(monaco) + ggtitle("Población de Monaco")
+
+monaco_fut2 |> 
+  autoplot(monaco |>filter_index("2005" ~ .)) + ggtitle("Población de Monaco")
+```
+
