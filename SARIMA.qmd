@@ -64,7 +64,7 @@ h02_fit <- h02_train |>
     arima_100_110 = ARIMA(log(Cost) ~ pdq(1,1,0) + PDQ(1,1,0)),
     arima_212_212 = ARIMA(log(Cost) ~ pdq(2,1,2) + PDQ(2,1,2) + 1),
     arima_212_213 = ARIMA(log(Cost) ~ pdq(2,1,2) + PDQ(2,1,3) + 1),
-    arima_100_312 = ARIMA(log(Cost) ~ pdq(1,0,0) + PDQ(3,1,2)),
+    arima_100_312 = ARIMA(log(Cost) ~ pdq(1,0,0) + PDQ(3,1,2))
   )
 
 h02_fit
