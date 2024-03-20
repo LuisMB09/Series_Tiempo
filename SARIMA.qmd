@@ -58,7 +58,7 @@ h02_train %>% gg_tsdisplay(log(Cost) %>% difference(12) %>% difference(), plot_t
 #| message: false
 h02_fit <- h02_train |> 
   model(
-    arima_211_011 = ARIMA(log(Cost) ~ pdq(2,1,1) + PDQ(0,1,1)),
+    arima_211_213 = ARIMA(log(Cost) ~ pdq(2,1,1) + PDQ(2,1,3) + 1),
     arima_211_311 = ARIMA(log(Cost) ~ pdq(2,1,1) + PDQ(3,1,1) + 1),
     arima_011_011 = ARIMA(log(Cost) ~ pdq(0,1,1) + PDQ(0,1,1)),
     arima_100_110 = ARIMA(log(Cost) ~ pdq(1,1,0) + PDQ(1,1,0)),
@@ -90,7 +90,7 @@ h02_fit |>
   gg_tsresiduals()
 
 h02_fit |> 
-  select(arima_212_212) |> 
+  select(arima_211_213) |> 
   gg_tsresiduals()
 ```
 
@@ -125,9 +125,12 @@ h02_fc |>
   arrange(MAPE)
 ```
 
+De acuerdo a nuestro test el modelo que mejor se adapta a los datos es el arima_212_212, por lo que ese será el utilizado para realizar nuestro pronóstico.
+
 ## Pronóstico
 
 ```{r}
+#| message: false
 h02_fut <- h02 |> 
   model(
     arima_212_212 = ARIMA(log(Cost) ~ pdq(2,1,2) + PDQ(2,1,2) + 1)
