@@ -1,0 +1,161 @@
+---
+title: "SARIMA"
+author: "Luis Márquez e Ivanna Herrera"
+format:
+  html:
+    embed-resources: true
+    theme:
+      light: minty
+      dark: darkly
+toc: true
+df-print: paged
+---
+
+```{r}
+#| message: false
+library(tidyverse)
+library(fpp3)
+```
+
+
+# SARIMA
+
+## Visualización
+
+
+```{r}
+h02 <- PBS %>%
+  filter(ATC2 == "H02") %>%
+  summarise(Cost = sum(Cost)/1e6)
+```
+
+```{r}
+h02 %>%
+  mutate(log(Cost)) %>%
+  gather() %>%
+  ggplot(aes(x = Month, y = value)) +
+  geom_line() +
+  facet_grid(key ~ ., scales = "free_y") +
+  xlab("Year") + ylab("") +
+  ggtitle("Cortecosteroid drug scripts (H02)")
+```
+
+
+## Train/Test
+
+```{r}
+h02_train <- h02 %>% 
+  filter_index(.~"2006 jun")
+h02_train
+```
+
+
+## Estacionariedad y Transformaciones
+
+
+```{r}
+h02_train %>% gg_tsdisplay(log(Cost) %>% difference(12) %>% difference(), plot_type='partial', lag_max = 48)
+
+```
+
+
+## Ajuste de los modelos
+
+
+```{r}
+#| message: false
+h02_fit <- h02_train |> 
+  model(
+    arima_211_213 = ARIMA(log(Cost) ~ pdq(2,1,1) + PDQ(2,1,3) + 1),
+    arima_211_311 = ARIMA(log(Cost) ~ pdq(2,1,1) + PDQ(3,1,1) + 1),
+    arima_011_011 = ARIMA(log(Cost) ~ pdq(0,1,1) + PDQ(0,1,1)),
+    arima_100_110 = ARIMA(log(Cost) ~ pdq(1,1,0) + PDQ(1,1,0)),
+    arima_212_212 = ARIMA(log(Cost) ~ pdq(2,1,2) + PDQ(2,1,2) + 1),
+    arima_212_213 = ARIMA(log(Cost) ~ pdq(2,1,2) + PDQ(2,1,3) + 1),
+    arima_100_312 = ARIMA(log(Cost) ~ pdq(1,0,0) + PDQ(3,1,2))
+  )
+
+h02_fit
+```
+
+```{r}
+h02_fit |> 
+  glance() |> 
+  arrange(AICc)
+```
+
+```{r}
+accuracy(h02_fit) |> 
+  arrange(MAPE)
+```
+
+
+## Análisis de residuos
+
+
+```{r}
+h02_fit |> 
+  select(arima_212_213) |> 
+  gg_tsresiduals()
+
+h02_fit |> 
+  select(arima_211_213) |> 
+  gg_tsresiduals()
+```
+
+```{r}
+h02_fit |> 
+  augment() |> 
+  features(.innov, ljung_box, lag = 24) |> 
+  mutate(residuos_autocorrelacionados = if_else(lb_pvalue >=0.05, "No autocorrelación", "Autocorrelacionados"))
+```
+
+
+## Pronóstico para test
+
+
+```{r}
+h02_fc <- h02_fit |> 
+  forecast(h = "2 years")
+
+h02_fc
+
+h02_fc |> 
+  autoplot(h02, level = NULL)
+
+h02_fc |> 
+  autoplot(h02 |> filter_index("2004 jan" ~ .), level = NULL) + 
+  theme(legend.position = NULL)
+
+h02_fc |> 
+  autoplot(h02 |> filter_index("2004 jan" ~ .)) + 
+  facet_wrap(~ .model, ncol = 3) + theme(legend.position = NULL)
+
+h02_fc |> 
+  accuracy(h02) |> 
+  arrange(MAPE)
+```
+
+
+De acuerdo a nuestro test el modelo que mejor se adapta a los datos es el arima_212_212, por lo que ese será el utilizado para realizar nuestro pronóstico.
+
+## Pronóstico
+
+
+```{r}
+#| message: false
+h02_fut <- h02 |> 
+  model(
+    arima_212_212 = ARIMA(log(Cost) ~ pdq(2,1,2) + PDQ(2,1,2) + 1)
+  ) |> 
+  forecast(h = "2 years")
+
+h02_fut
+
+h02_fut |> 
+  autoplot(h02) + ggtitle("Población de Monaco")
+
+h02_fut |> 
+  autoplot(h02 |>filter_index("2005 jan" ~ .)) + ggtitle("Población de Monaco")
+```
+
