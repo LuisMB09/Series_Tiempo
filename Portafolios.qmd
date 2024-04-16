@@ -1,0 +1,131 @@
+---
+title: "Portafolios"
+author: "Luis Máquez, Ana Sofía Hinojosa y David Campos"
+format:
+  html:
+    embed-resources: true
+    theme:
+      light: minty
+      dark: darkly
+toc: true
+df-print: paged
+---
+
+```{r}
+#| message: false
+
+library(tidyverse)
+library(fpp3)
+library(fable.prophet)
+library(tidyquant)
+```
+
+# Datos (precio de acciones)
+
+```{r}
+stocks <- c('ETH-USD', 'BTC-USD')
+
+stocks_data <- tq_get(
+  x = stocks,
+  get = "stock.prices",
+  from = "2019-01-01",
+  to = "2024-04-15"
+  )
+
+
+stocks_data <- stocks_data |> 
+  as_tsibble(index = date, key = symbol)
+
+stocks_data <- stocks_data |> 
+  select(c(symbol, date, close))
+stocks_data
+stocks_data |> 
+  autoplot(close)
+```
+
+## Train/Test
+
+```{r}
+stocks_data_train <- stocks_data |> 
+  filter_index(.~"2023-04-15")
+
+stocks_data_train
+```
+
+## Ajuste de modelos
+
+```{r}
+tictoc::tic()
+stocks_data_fit <- stocks_data_train |> 
+  model(
+    naive = NAIVE(close),
+    ets = ETS(close),
+    arima = ARIMA(close),
+    reg_lin = TSLM(close),
+    prophet = prophet(close ~ growth("linear")),
+    prophet_auto = prophet(close)
+  )
+tictoc::toc()
+stocks_data_fit
+```
+
+```{r}
+accuracy(stocks_data_fit) |> 
+  arrange(symbol, MAPE) |> 
+  select(symbol, .model, .type, MAPE, MASE, MAE, RMSE)
+```
+
+## Pronóstico Test
+
+```{r}
+stocks_data_fc <- stocks_data_fit |> 
+  forecast(h = "1 year")
+stocks_data_fc
+
+stocks_data_fc |> 
+  autoplot(stocks_data |> filter_index("2022-12-31" ~ .), level = NULL) + 
+  theme(legend.position = NULL)
+
+stocks_data_fc |> 
+  autoplot(stocks_data |> filter_index("2022-12-31" ~ .)) + 
+  facet_wrap(~ .model, ncol = 3) + theme(legend.position = NULL)
+```
+
+```{r}
+stocks_data_fc |> 
+  accuracy(stocks_data) |> 
+  arrange(symbol, MAPE) |> 
+  select(symbol, .model, .type, MAPE, MASE, MAE, RMSE)
+```
+
+Combinamos modelos
+
+```{r}
+stocks_data_fit <- stocks_data_fit |> 
+  mutate(combinado = (ets + arima)/2)
+stocks_data_fit
+```
+
+```{r}
+stocks_data_fc <- stocks_data_fit |> 
+  forecast(h = "1 year")
+stocks_data_fc
+
+stocks_data_fc |> 
+  autoplot(stocks_data |> filter_index("2022-12-31" ~ .), level = NULL) + 
+  theme(legend.position = NULL)
+
+stocks_data_fc |> 
+  autoplot(stocks_data |> filter_index("2022-12-31" ~ .)) + 
+  facet_wrap(~ .model, ncol = 3) + theme(legend.position = NULL)
+```
+
+```{r}
+stocks_data_fc |> 
+  accuracy(stocks_data) |> 
+  arrange(symbol, MAPE) |> 
+  select(symbol, .model, .type, MAPE, MASE, MAE, RMSE)
+```
+
+
+
