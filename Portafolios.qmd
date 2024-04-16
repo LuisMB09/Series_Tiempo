@@ -23,7 +23,7 @@ library(tidyquant)
 # Datos (precio de acciones)
 
 ```{r}
-stocks <- c('ETH-USD', 'BTC-USD')
+stocks <- c('AAPL', 'AMZN', 'JPM', 'ETH-USD')
 
 stocks_data <- tq_get(
   x = stocks,
@@ -55,6 +55,8 @@ stocks_data_train
 ## Ajuste de modelos
 
 ```{r}
+stocks_data_train <- stocks_data_train |> 
+  fill_gaps(date)
 tictoc::tic()
 stocks_data_fit <- stocks_data_train |> 
   model(
@@ -85,10 +87,6 @@ stocks_data_fc
 stocks_data_fc |> 
   autoplot(stocks_data |> filter_index("2022-12-31" ~ .), level = NULL) + 
   theme(legend.position = NULL)
-
-stocks_data_fc |> 
-  autoplot(stocks_data |> filter_index("2022-12-31" ~ .)) + 
-  facet_wrap(~ .model, ncol = 3) + theme(legend.position = NULL)
 ```
 
 ```{r}
@@ -102,7 +100,10 @@ Combinamos modelos
 
 ```{r}
 stocks_data_fit <- stocks_data_fit |> 
-  mutate(combinado = (ets + arima)/2)
+  mutate(combinado = (prophet + arima)/2,
+         combinado2 = (ets + arima)/2,
+         combinado3 = (prophet + naive)/2
+         )
 stocks_data_fit
 ```
 
@@ -114,10 +115,6 @@ stocks_data_fc
 stocks_data_fc |> 
   autoplot(stocks_data |> filter_index("2022-12-31" ~ .), level = NULL) + 
   theme(legend.position = NULL)
-
-stocks_data_fc |> 
-  autoplot(stocks_data |> filter_index("2022-12-31" ~ .)) + 
-  facet_wrap(~ .model, ncol = 3) + theme(legend.position = NULL)
 ```
 
 ```{r}
