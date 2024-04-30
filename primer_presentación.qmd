@@ -1,5 +1,5 @@
 ---
-title: "Primer Presentación"
+title: "Primer_Presentación"
 format: 
   html: default
   revealjs:
@@ -14,3 +14,31 @@ toc: true
 ## Título de diapositiva
 
 Contenido
+
+## Código
+
+```{r}
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(fpp3)
+```
+
+```{r}
+aus_production |> 
+  autoplot(Tobacco)+
+  ggtitle("Producción trimestral de tabaco en Australia")
+```
+
+## Modelado
+```{r}
+aus_production |> 
+  model(
+    snaive = SNAIVE(Tobacco),
+    ets = ETS(Tobacco),
+    arima = ARIMA(Tobacco),
+    reg = TSLM(Tobacco ~ trend(knots = c(1980))+ season())
+  )
+```
+
