@@ -1,0 +1,16 @@
+---
+title: "Primer Presentación"
+format: 
+  html: default
+  revealjs:
+    output-file: ppt_quarto_pres.html
+  pptx: default
+  pdf: default
+toc: true
+---
+
+# Encabezado de sección
+
+## Título de diapositiva
+
+Contenido
