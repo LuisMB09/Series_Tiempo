@@ -23,7 +23,7 @@ library(tidyquant)
 # Datos (precio de acciones)
 
 ```{r}
-stocks <- c('AAPL', 'AMZN', 'JPM', 'ETH-USD')
+stocks <- c('V')
 
 stocks_data <- tq_get(
   x = stocks,
@@ -100,8 +100,8 @@ Combinamos modelos
 
 ```{r}
 stocks_data_fit <- stocks_data_fit |> 
-  mutate(combinado = (prophet + arima)/2,
-         combinado2 = (ets + arima)/2,
+  mutate(combinado = (prophet_auto + arima)/2,
+         combinado2 = (reg_lin + arima)/2,
          combinado3 = (prophet + naive)/2
          )
 stocks_data_fit
@@ -124,5 +124,19 @@ stocks_data_fc |>
   select(symbol, .model, .type, MAPE, MASE, MAE, RMSE)
 ```
 
+## Forecast
+
+```{r}
+stocks_data_fut <- stocks_data |> 
+  model(
+    prophet_auto = prophet(close)
+  ) |> 
+  forecast(h = "1 year")
+
+stocks_data_fut
+
+stocks_data_fut |> 
+  autoplot(stocks_data) + ggtitle("Pronóstico del precio de Visa")
+```
 
 
