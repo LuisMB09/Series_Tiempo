@@ -1,0 +1,59 @@
+---
+title: "Proyecto final series de tiempo"
+author: "JH, AGHG y FAFL"
+format: 
+  revealjs: 
+    output-file: ppt_quarto_pres.html
+  pptx: default
+  pdf : default
+  docx: default
+toc: true
+---
+
+```{r}
+#/ message : false
+library (tidyverse)
+library(tidyquant)
+library (tsibble)
+library (feasts)
+library (fable)
+library(tsibbledata)
+library (fpp3)
+library (lubridate)
+library (fable.prophet)
+library(plotly)
+```
+
+```{r}
+train<- read_csv("train.csv")
+```
+
+```{r}
+#| echo: true
+
+train_tsbl<- train|>
+  as_tsibble(index=date, key=c(store_nbr, family))
+
+
+train_tsbl
+```
+
+```{r}
+train_tsbl <- train_tsbl |> 
+  fill_gaps(.full = TRUE, 
+            sales = 0L,
+            onpromotion = 0L) 
+
+
+```
+
+```{r}
+
+fit<- train_tsbl |> 
+  model(
+    snaive = SNAIVE (sales)
+  )
+tictoc::toc()
+
+fit
+```

@@ -1,0 +1,137 @@
+---
+title: "Proyecto series"
+author: "Luis Márquez"
+format:
+  html:
+    embed-resources: true
+    theme:
+      light: minty
+      dark: darkly
+toc: true
+df-print: paged
+---
+
+## pkgs
+
+```{r}
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(fpp3)
+library(fable.prophet)
+library(plotly)
+```
+
+## Datos
+
+### Importación de datos
+
+```{r}
+train <- read_csv("train.csv", show_col_types = FALSE)
+train_tsbl <- train |> 
+  as_tsibble(index = date, key = c(store_nbr, family)) 
+
+train_tsbl
+```
+
+### Limpieza de datos
+
+```{r}
+cerrado <- train_tsbl |> 
+  count_gaps(.full = TRUE) |> 
+  distinct(.from)
+
+cerrado
+```
+
+```{r}
+train_tsbl <- train_tsbl |> 
+  fill_gaps(.full = TRUE, 
+            sales = 0L, 
+            onpromotion = 0L)
+
+train_tsbl
+```
+
+## Gráfica
+
+```{r}
+#train_tsbl |> 
+ # autoplot(sales, alpha = 0.3) + 
+  #theme(legend.position = "none")
+```
+
+## Train/Test
+
+```{r}
+data_train <- train_tsbl |>  
+  filter_index(. ~ "2016-08-15")
+```
+
+
+## Ajuste de modelos
+
+```{r}
+#tictoc::tic()
+#data_fit <- data_train |> 
+ # model(
+  #  naive = NAIVE(sales)
+  #)
+#tictoc::toc()
+#data_fit
+```
+
+```{r}
+#data_fit |> 
+ # accuracy()
+```
+
+
+## Forecast del test
+
+```{r}
+#tictoc::tic()
+#data_fc <- data_fit |> 
+ # forecast(h = "1 year")
+#tictoc::toc()
+```
+
+```{r}
+#data_fc |> 
+ # accuracy(train_tsbl)
+```
+
+## Forecast
+
+```{r}
+tictoc::tic()
+train_fut <- train_tsbl |> 
+  model(
+    ets_MAdA = ETS(sales ~ error("M") + trend("Ad") + season("A"))
+  ) |> 
+  forecast(h = 16)
+  # forecast(new_data = ) # para modelos que incluyan predictoras exógenas (regresión, etc.)
+tictoc::toc()
+
+train_fut
+```
+
+## Kaggle
+
+```{r}
+test <- read_csv("test.csv", show_col_types = FALSE)
+test
+```
+
+```{r}
+submission <- train_fut |> 
+  left_join(test, by = c("date", "store_nbr", "family")) |> 
+  as_tibble() |> 
+  select(id, .mean) |> 
+  rename(sales = .mean)
+submission
+
+submission |> 
+  write_csv("submission.csv")
+```
